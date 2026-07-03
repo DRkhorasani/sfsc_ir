@@ -1,0 +1,843 @@
+/*=========================================================
+نام فایل: responsive.css
+
+وظیفه: استایل‌های واکنش‌گرا (Responsive) برای تمامی صفحات و کامپوننت‌ها
+
+نویسنده: تیم توسعه سورنا فناور سینا
+
+تاریخ: ۱۴۰۵/۰۴/۱۲
+=========================================================*/
+
+/* ===== BREAKPOINTS ===== */
+/* 1400px و بالاتر: دسکتاپ بزرگ */
+/* 1200px: دسکتاپ */
+/* 992px: لپ‌تاپ */
+/* 768px: تبلت */
+/* 576px: موبایل بزرگ */
+/* 480px: موبایل کوچک */
+
+/* ===== 1200px ===== */
+@media (max-width: 1200px) {
+    .container {
+        padding: 0 1.5rem;
+    }
+
+    .hero__grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .hero__image-wrapper {
+        max-width: 100%;
+    }
+
+    .hero__content {
+        padding: 1.5rem;
+    }
+
+    .hero__title {
+        font-size: 2.2rem;
+    }
+
+    .brand__grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .brand__logo-wrapper {
+        order: -1;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .patent__grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .patent__image {
+        order: -1;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .dashboard__grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .dashboard__image {
+        order: -1;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .contact__grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .products__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .news__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .services__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stats__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gallery__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ===== 992px ===== */
+@media (max-width: 992px) {
+    .navbar__nav {
+        display: none;
+    }
+
+    .navbar__hamburger {
+        display: block;
+    }
+
+    .navbar__mobile.open {
+        display: flex;
+    }
+
+    .hero {
+        min-height: auto;
+        padding: 7rem 0 3rem;
+    }
+
+    .hero__stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .hero__brand {
+        justify-content: center;
+    }
+
+    .section {
+        padding: 3rem 0;
+    }
+
+    .section__title {
+        font-size: 1.8rem;
+    }
+
+    .auth__form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .auth__profile-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .auth__actions {
+        grid-template-columns: 1fr;
+    }
+
+    .auth__card {
+        padding: 1.5rem;
+    }
+
+    .brand__cards {
+        grid-template-columns: 1fr;
+    }
+
+    .brand__gallery {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .brand__gallery-img {
+        height: 100px;
+    }
+}
+
+/* ===== 768px ===== */
+@media (max-width: 768px) {
+    .navbar__inner {
+        flex-wrap: wrap;
+    }
+
+    .navbar__brand {
+        flex: 1;
+    }
+
+    .navbar__title {
+        font-size: 1rem;
+    }
+
+    .navbar__logo {
+        width: 40px;
+        height: 40px;
+    }
+
+    .navbar__actions {
+        gap: 0.5rem;
+    }
+
+    .navbar__actions .btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .navbar__lang .lang-btn {
+        padding: 0.15rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .hero__title {
+        font-size: 1.8rem;
+    }
+
+    .hero__desc {
+        font-size: 1rem;
+    }
+
+    .hero__stats {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .hero__stat {
+        padding: 0.75rem;
+    }
+
+    .hero__image-caption {
+        position: relative;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: 0;
+        margin-top: 0.5rem;
+        background: rgba(15, 23, 42, 0.8);
+    }
+
+    .hero__image-wrapper {
+        border-radius: var(--radius);
+    }
+
+    .hero__brand {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .hero__brand-logo {
+        width: 64px;
+        height: 64px;
+    }
+
+    .products__grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .services__grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .news__grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .gallery__grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .gallery__img {
+        height: 160px;
+    }
+
+    .stats__grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .stats__number {
+        font-size: 2.2rem;
+    }
+
+    .stats__item {
+        padding: 1rem;
+    }
+
+    .compare__table th,
+    .compare__table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .contact__form {
+        padding: 1.5rem;
+    }
+
+    .footer__desc {
+        font-size: 0.9rem;
+    }
+
+    .modal-content {
+        padding: 1.25rem;
+        margin: 0.5rem;
+        max-height: 95vh;
+    }
+
+    .modal-content .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .modal-content .gallery-grid img {
+        height: 100px;
+    }
+}
+
+/* ===== 576px ===== */
+@media (max-width: 576px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    .navbar__actions .btn {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.5rem;
+    }
+
+    .navbar__actions .btn--sm {
+        padding: 0.3rem 0.6rem;
+    }
+
+    .navbar__title {
+        font-size: 0.9rem;
+    }
+
+    .navbar__subtitle {
+        font-size: 0.65rem;
+    }
+
+    .hero__title {
+        font-size: 1.5rem;
+    }
+
+    .hero__badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.75rem;
+    }
+
+    .hero__buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .hero__buttons .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hero__image-title {
+        font-size: 1.2rem;
+    }
+
+    .hero__image-desc {
+        font-size: 0.8rem;
+    }
+
+    .section__title {
+        font-size: 1.5rem;
+    }
+
+    .section__subtitle {
+        font-size: 0.95rem;
+    }
+
+    .section__badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+    }
+
+    .brand__gallery {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .brand__gallery-img {
+        height: 80px;
+    }
+
+    .brand__actions {
+        flex-direction: column;
+    }
+
+    .brand__actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats__grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .stats__number {
+        font-size: 1.8rem;
+    }
+
+    .stats__label {
+        font-size: 0.9rem;
+    }
+
+    .gallery__grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .gallery__img {
+        height: 130px;
+    }
+
+    .auth__tabs {
+        flex-direction: column;
+        border-radius: var(--radius);
+        gap: 0.25rem;
+        padding: 0.5rem;
+        background: transparent;
+    }
+
+    .auth__tab {
+        border-radius: var(--radius);
+        background: var(--gray-bg);
+        padding: 0.6rem;
+        font-size: 0.9rem;
+    }
+
+    .auth__tab--active {
+        background: var(--primary);
+        color: var(--white);
+    }
+
+    .auth__card {
+        padding: 1rem;
+        border-radius: var(--radius);
+    }
+
+    .auth__form-grid {
+        gap: 0.75rem;
+    }
+
+    .auth__input {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .auth__otp-wrapper {
+        padding: 0.75rem;
+    }
+
+    .compare__table th,
+    .compare__table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .compare__table {
+        font-size: 0.75rem;
+    }
+
+    .contact__details {
+        font-size: 0.9rem;
+    }
+
+    .contact__form {
+        padding: 1rem;
+    }
+
+    .contact__input {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .footer__title {
+        font-size: 1.2rem;
+    }
+
+    .footer__social {
+        font-size: 1.2rem;
+        gap: 1rem;
+    }
+
+    .footer__copy {
+        font-size: 0.75rem;
+    }
+
+    .modal-content {
+        padding: 1rem;
+        border-radius: var(--radius);
+    }
+
+    .modal-close {
+        top: 0.5rem;
+        left: 0.5rem;
+        font-size: 1.2rem;
+    }
+
+    .modal-content .gallery-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .modal-content .gallery-grid img {
+        height: 80px;
+    }
+
+    .modal-content .product-actions {
+        flex-direction: column;
+    }
+
+    .modal-content .product-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ===== 480px ===== */
+@media (max-width: 480px) {
+    .navbar__inner {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .navbar__brand {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .navbar__title {
+        font-size: 0.8rem;
+    }
+
+    .navbar__subtitle {
+        display: none;
+    }
+
+    .navbar__logo {
+        width: 32px;
+        height: 32px;
+    }
+
+    .navbar__actions .btn {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .navbar__actions .btn--sm {
+        padding: 0.2rem 0.4rem;
+    }
+
+    .navbar__lang .lang-btn {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.4rem;
+    }
+
+    .hero {
+        padding: 6rem 0 2rem;
+    }
+
+    .hero__title {
+        font-size: 1.3rem;
+    }
+
+    .hero__desc {
+        font-size: 0.9rem;
+    }
+
+    .hero__content {
+        padding: 1rem;
+        border-radius: var(--radius);
+    }
+
+    .hero__image-caption {
+        padding: 0.75rem;
+    }
+
+    .hero__image-title {
+        font-size: 1rem;
+    }
+
+    .hero__image-desc {
+        font-size: 0.75rem;
+    }
+
+    .hero__brand-logo {
+        width: 50px;
+        height: 50px;
+    }
+
+    .hero__brand-name {
+        font-size: 1rem;
+    }
+
+    .section {
+        padding: 2rem 0;
+    }
+
+    .section__title {
+        font-size: 1.3rem;
+    }
+
+    .section__subtitle {
+        font-size: 0.85rem;
+    }
+
+    .stats__grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .stats__item {
+        padding: 0.75rem;
+        border-radius: var(--radius);
+    }
+
+    .stats__number {
+        font-size: 1.5rem;
+    }
+
+    .stats__label {
+        font-size: 0.8rem;
+    }
+
+    .products__grid {
+        gap: 1rem;
+    }
+
+    .product-card__body {
+        padding: 1rem;
+    }
+
+    .product-card__title {
+        font-size: 1rem;
+    }
+
+    .product-card__desc {
+        font-size: 0.85rem;
+    }
+
+    .product-card__price {
+        font-size: 1rem;
+    }
+
+    .product-card__image {
+        height: 160px;
+    }
+
+    .news-card__body {
+        padding: 1rem;
+    }
+
+    .news-card__title {
+        font-size: 1rem;
+    }
+
+    .news-card__desc {
+        font-size: 0.85rem;
+    }
+
+    .news-card__image {
+        height: 160px;
+    }
+
+    .service-card {
+        padding: 1rem;
+    }
+
+    .service-card__icon {
+        font-size: 2rem;
+    }
+
+    .service-card__title {
+        font-size: 1rem;
+    }
+
+    .service-card__desc {
+        font-size: 0.85rem;
+    }
+
+    .gallery__grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .gallery__img {
+        height: 100px;
+        border-radius: var(--radius);
+    }
+
+    .brand__gallery {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.25rem;
+    }
+
+    .brand__gallery-img {
+        height: 60px;
+        border-radius: var(--radius);
+    }
+
+    .brand__card {
+        padding: 1rem;
+    }
+
+    .brand__card h3 {
+        font-size: 1rem;
+    }
+
+    .brand__card p {
+        font-size: 0.85rem;
+    }
+
+    .patent__features li {
+        font-size: 0.9rem;
+    }
+
+    .dashboard__features li {
+        font-size: 0.9rem;
+    }
+
+    .faq-item {
+        padding: 1rem;
+    }
+
+    .faq-item__question {
+        font-size: 0.95rem;
+    }
+
+    .faq-item__answer {
+        font-size: 0.9rem;
+    }
+
+    .contact__details div {
+        font-size: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .contact__form {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+
+    .contact__form label {
+        font-size: 0.9rem;
+    }
+
+    .contact__input {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .auth__card {
+        padding: 0.75rem;
+    }
+
+    .auth__tabs .auth__tab {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    .auth__input {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.6rem;
+    }
+
+    .auth__actions .btn {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+
+    .auth__profile-info p {
+        font-size: 0.9rem;
+    }
+
+    .auth__profile-change label {
+        font-size: 0.9rem;
+    }
+
+    .modal-content {
+        padding: 0.75rem;
+        margin: 0.25rem;
+    }
+
+    .modal-content .gallery-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.25rem;
+    }
+
+    .modal-content .gallery-grid img {
+        height: 60px;
+    }
+
+    .modal-content .product-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-content .product-actions .btn {
+        width: 100%;
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+
+    .modal-content h2 {
+        font-size: 1.2rem;
+    }
+
+    .modal-content p,
+    .modal-content li {
+        font-size: 0.85rem;
+    }
+
+    .compare__table th,
+    .compare__table td {
+        padding: 0.4rem 0.2rem;
+        font-size: 0.65rem;
+    }
+
+    .compare__table {
+        font-size: 0.65rem;
+    }
+
+    .btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .btn--sm {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .footer {
+        padding: 1.5rem 0;
+    }
+
+    .footer__desc {
+        font-size: 0.8rem;
+    }
+
+    .footer__social {
+        font-size: 1rem;
+        gap: 0.75rem;
+    }
+
+    .footer__copy {
+        font-size: 0.65rem;
+    }
+}

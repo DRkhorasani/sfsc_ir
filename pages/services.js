@@ -1,8 +1,8 @@
 /*=========================================================
-نام فایل: services.js
+نام فایل: services.js (صفحه)
 
-وظیفه: صفحه خدمات با قابلیت نمایش لیست خدمات، جستجو،
-فیلتر بر اساس نوع، درخواست خدمت، صفحه‌بندی و مشاهده جزییات
+وظیفه: کنترلر صفحه خدمات – رندر UI، جستجو، فیلتر بر اساس نوع،
+صفحه‌بندی، درخواست خدمت و مدیریت رویدادها
 
 نویسنده: تیم توسعه سورنا فناور سینا
 
@@ -11,29 +11,19 @@
 
 import { State } from '../js/state.js';
 import { translator } from '../js/translator.js';
-import { api } from '../js/api.js';
-import { Modal } from '../js/modal.js';
+import { Services } from '../js/services.js';
 import { utils } from '../js/utils.js';
+import { Modal } from '../js/modal.js';
 import { ServiceCardList } from '../components/serviceCard.js';
 import { Pagination } from '../components/pagination.js';
 
 /*---------------------------------------------------------
 کلاس ServicesPage
 
-وظیفه: مدیریت و رندر صفحه خدمات
+وظیفه: مدیریت صفحه خدمات
 
 ---------------------------------------------------------*/
 class ServicesPage {
-    /*---------------------------------------------------------
-    متد constructor
-
-    وظیفه: مقداردهی اولیه صفحه خدمات
-
-    ورودی‌ها: options (object)
-
-    خروجی: instance
-
-    ---------------------------------------------------------*/
     constructor(options = {}) {
         this.options = {
             container: '#services',
@@ -46,7 +36,7 @@ class ServicesPage {
         this._pagination = null;
         this._services = [];
         this._filteredServices = [];
-        this._serviceTypes = [];
+        this._types = [];
         this._currentPage = 1;
         this._itemsPerPage = 8;
         this._searchQuery = '';
@@ -58,7 +48,7 @@ class ServicesPage {
     /*---------------------------------------------------------
     متد init
 
-    وظیفه: مقداردهی اولیه و رندر صفحه خدمات
+    وظیفه: مقداردهی اولیه و رندر صفحه
 
     ورودی‌ها: none
 
@@ -68,7 +58,6 @@ class ServicesPage {
     async init() {
         if (this._initialized) return;
 
-        // دریافت المان اصلی
         this._element = document.querySelector(this.options.container);
         if (!this._element) {
             console.warn('⚠️ المان صفحه خدمات یافت نشد.');
@@ -84,6 +73,9 @@ class ServicesPage {
         // مقداردهی کامپوننت‌ها
         this._initComponents();
 
+        // رندر خدمات
+        this._renderServices();
+
         // اتصال رویدادها
         this._bindEvents();
 
@@ -97,7 +89,7 @@ class ServicesPage {
     /*---------------------------------------------------------
     متد _loadData
 
-    وظیفه: بارگذاری داده‌های خدمات از API
+    وظیفه: بارگذاری داده‌ها از سرویس
 
     ورودی‌ها: none
 
@@ -108,24 +100,14 @@ class ServicesPage {
         try {
             this._isLoading = true;
             this._showLoading();
-
-            const response = await api.get('/services');
-            if (response?.success && response?.data) {
-                this._services = response.data;
-                this._filteredServices = [...this._services];
-
-                // استخراج انواع خدمات
-                const types = new Set();
-                this._services.forEach(service => {
-                    if (service.type) {
-                        types.add(service.type);
-                    }
-                });
-                this._serviceTypes = Array.from(types);
-            }
-
+            this._services = await Services.getServices();
+            this._types = await Services.getTypes();
+            this._filteredServices = [...this._services];
         } catch (error) {
             console.warn('⚠️ خطا در بارگذاری خدمات:', error);
+            this._services = await Services.getServices(); // داده‌های نمونه
+            this._types = await Services.getTypes();
+            this._filteredServices = [...this._services];
             utils.toast(
                 translator.translate('loadServicesError') || 'خطا در بارگذاری خدمات.',
                 'error'
@@ -147,9 +129,7 @@ class ServicesPage {
 
     ---------------------------------------------------------*/
     _buildPageStructure() {
-        if (this._element.querySelector('.services-page__wrapper')) {
-            return;
-        }
+        if (this._element.querySelector('.services-page__wrapper')) return;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'services-page__wrapper';
@@ -198,21 +178,28 @@ class ServicesPage {
         paginationContainer.className = 'services-page__pagination';
         wrapper.appendChild(paginationContainer);
 
-        // افزودن به صفحه
+        // پیام خالی بودن
+        const emptyMsg = document.createElement('div');
+        emptyMsg.id = 'servicesEmptyMessage';
+        emptyMsg.className = 'services-page__empty hidden';
+        emptyMsg.innerHTML = `
+            <i class="fas fa-concierge-bell" style="font-size:3rem;color:#94a3b8;display:block;margin-bottom:1rem;"></i>
+            <p data-i18n="noServicesFound">خدماتی یافت نشد.</p>
+        `;
+        wrapper.appendChild(emptyMsg);
+
         this._element.appendChild(wrapper);
 
         // ترجمه
         if (translator && translator.loaded) {
-            setTimeout(() => {
-                translator.translateElement(this._element);
-            }, 50);
+            setTimeout(() => translator.translateElement(this._element), 50);
         }
     }
 
     /*---------------------------------------------------------
     متد _initComponents
 
-    وظیفه: مقداردهی کامپوننت‌های صفحه
+    وظیفه: مقداردهی کامپوننت‌ها
 
     ورودی‌ها: none
 
@@ -220,7 +207,7 @@ class ServicesPage {
 
     ---------------------------------------------------------*/
     _initComponents() {
-        // ---- لیست خدمات ----
+        // لیست خدمات
         const servicesContainer = document.getElementById('servicesList');
         if (servicesContainer) {
             this._serviceList = new ServiceCardList(servicesContainer, {
@@ -228,14 +215,13 @@ class ServicesPage {
                 showDescription: true,
                 showRequestButton: true,
                 onRequest: (service, formData) => {
-                    // ثبت درخواست خدمت
-                    this._submitServiceRequest(service, formData);
+                    this._handleServiceRequest(service, formData);
                 },
             });
             this._serviceList.init();
         }
 
-        // ---- صفحه‌بندی ----
+        // صفحه‌بندی
         const paginationContainer = document.getElementById('servicesPagination');
         if (paginationContainer) {
             this._pagination = new Pagination({
@@ -260,11 +246,8 @@ class ServicesPage {
             paginationContainer.appendChild(this._pagination.render());
         }
 
-        // پر کردن انواع خدمات
+        // پر کردن انواع
         this._populateTypes();
-
-        // رندر اولیه خدمات
-        this._renderServices();
     }
 
     /*---------------------------------------------------------
@@ -286,13 +269,14 @@ class ServicesPage {
         }
 
         const typeLabels = {
-            'sampling': translator.translate('typeSampling') || 'نمونه‌گیری',
-            'analysis': translator.translate('typeAnalysis') || 'تحلیل',
-            'consulting': translator.translate('typeConsulting') || 'مشاوره',
-            'training': translator.translate('typeTraining') || 'آموزش',
+            sampling: translator.translate('typeSampling') || 'نمونه‌گیری',
+            analysis: translator.translate('typeAnalysis') || 'تحلیل',
+            consulting: translator.translate('typeConsulting') || 'مشاوره',
+            training: translator.translate('typeTraining') || 'آموزش',
+            service: translator.translate('typeService') || 'خدمات فنی',
         };
 
-        this._serviceTypes.forEach(type => {
+        this._types.forEach(type => {
             const option = document.createElement('option');
             option.value = type;
             option.textContent = typeLabels[type] || type;
@@ -303,7 +287,7 @@ class ServicesPage {
     /*---------------------------------------------------------
     متد _renderServices
 
-    وظیفه: رندر خدمات بر اساس فیلترها و صفحه‌بندی
+    وظیفه: رندر خدمات با اعمال فیلترها و صفحه‌بندی
 
     ورودی‌ها: none
 
@@ -313,44 +297,44 @@ class ServicesPage {
     _renderServices() {
         if (!this._serviceList) return;
 
+        const emptyMessage = document.getElementById('servicesEmptyMessage');
+        const countEl = document.getElementById('serviceResultsCount');
+
         // اعمال فیلترها
         this._applyFilters();
 
-        // محاسبه offset و limit
-        const start = (this._currentPage - 1) * this._itemsPerPage;
-        const end = Math.min(start + this._itemsPerPage, this._filteredServices.length);
+        const totalItems = this._filteredServices.length;
+        const currentPage = Math.min(this._currentPage, Math.ceil(totalItems / this._itemsPerPage) || 1);
+        const start = (currentPage - 1) * this._itemsPerPage;
+        const end = Math.min(start + this._itemsPerPage, totalItems);
         const pageItems = this._filteredServices.slice(start, end);
 
-        // به‌روزرسانی لیست خدمات
-        this._serviceList.setServices(pageItems);
-
-        // به‌روزرسانی تعداد نتایج
-        const countEl = document.getElementById('serviceResultsCount');
+        // به‌روزرسانی تعداد
         if (countEl) {
-            const total = this._filteredServices.length;
             const text = translator.translate('services') || 'خدمت';
-            countEl.textContent = `${total} ${text}`;
+            countEl.textContent = `${totalItems} ${text}`;
         }
+
+        // اگر نتیجه‌ای وجود نداشت
+        if (totalItems === 0) {
+            this._serviceList.setServices([]);
+            if (emptyMessage) emptyMessage.classList.remove('hidden');
+            if (this._pagination) {
+                this._pagination.setTotalItems(0);
+                this._pagination.render();
+            }
+            return;
+        }
+
+        if (emptyMessage) emptyMessage.classList.add('hidden');
+
+        // به‌روزرسانی لیست
+        this._serviceList.setServices(pageItems);
 
         // به‌روزرسانی صفحه‌بندی
         if (this._pagination) {
-            this._pagination.setTotalItems(this._filteredServices.length);
-            this._pagination.goToPage(this._currentPage);
-        }
-
-        // اگر نتیجه‌ای وجود نداشت، پیام نمایش داده شود
-        if (this._filteredServices.length === 0) {
-            const container = document.getElementById('servicesList');
-            if (container) {
-                const emptyMsg = document.createElement('p');
-                emptyMsg.className = 'text-center text-muted';
-                emptyMsg.textContent = translator.translate('noServicesFound') || 'خدماتی یافت نشد.';
-                emptyMsg.setAttribute('data-i18n', 'noServicesFound');
-                container.appendChild(emptyMsg);
-                if (translator && translator.loaded) {
-                    translator.translateElement(emptyMsg);
-                }
-            }
+            this._pagination.setTotalItems(totalItems);
+            this._pagination.goToPage(currentPage);
         }
     }
 
@@ -368,56 +352,135 @@ class ServicesPage {
         let filtered = [...this._services];
 
         // فیلتر جستجو
-        if (this._searchQuery) {
+        if (this._searchQuery && this._searchQuery.trim() !== '') {
             const query = this._searchQuery.toLowerCase().trim();
-            filtered = filtered.filter(service =>
-                service.title?.toLowerCase().includes(query) ||
-                service.description?.toLowerCase().includes(query) ||
-                service.type?.toLowerCase().includes(query)
+            filtered = filtered.filter(item =>
+                item.title?.toLowerCase().includes(query) ||
+                item.description?.toLowerCase().includes(query) ||
+                item.type?.toLowerCase().includes(query)
             );
         }
 
         // فیلتر نوع
-        if (this._selectedType) {
-            filtered = filtered.filter(service =>
-                service.type === this._selectedType
-            );
+        if (this._selectedType && this._selectedType.trim() !== '') {
+            filtered = filtered.filter(item => item.type === this._selectedType);
         }
 
         this._filteredServices = filtered;
     }
 
     /*---------------------------------------------------------
-    متد _submitServiceRequest
+    متد _handleServiceRequest
 
-    وظیفه: ارسال درخواست خدمت به سرور
+    وظیفه: مدیریت درخواست خدمت از طریق سرویس
 
     ورودی‌ها: service (object), formData (object)
 
     خروجی: Promise<void>
 
     ---------------------------------------------------------*/
-    async _submitServiceRequest(service, formData) {
-        try {
-            const data = {
-                serviceId: service.id,
-                serviceTitle: service.title,
-                ...formData,
-            };
+    async _handleServiceRequest(service, formData) {
+        if (!service || !formData) return;
 
-            const response = await api.post('/services/request', data);
-            if (response?.success) {
+        try {
+            const result = await Services.requestService(service.id, formData);
+            if (result.success) {
                 utils.toast(
-                    translator.translate('serviceRequestSubmitted') || 'درخواست خدمت با موفقیت ثبت شد.',
+                    result.message || translator.translate('serviceRequestSubmitted') || 'درخواست خدمت با موفقیت ثبت شد.',
                     'success'
                 );
-            } else {
-                throw new Error(response?.message || 'خطا در ثبت درخواست');
             }
         } catch (error) {
-            console.error('❌ خطا در ثبت درخواست خدمت:', error);
             utils.toast(
-                translator.translate('serviceRequestError') || 'خطا در ثبت درخواست. لطفاً مجدداً تلاش کنید.',
+                error.message || translator.translate('serviceRequestError') || 'خطا در ثبت درخواست خدمت.',
+                'error'
+            );
+        }
+    }
+
+    /*---------------------------------------------------------
+    متد _showLoading
+
+    وظیفه: نمایش وضعیت بارگذاری
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _showLoading() {
+        const container = document.getElementById('servicesList');
+        if (container) {
+            container.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:3rem 0;">
+                    <div class="spinner" style="margin:0 auto 1rem;"></div>
+                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
+                </div>
+            `;
+        }
+    }
+
+    _hideLoading() {
+        // توسط _renderServices مدیریت می‌شود
+    }
+
+    /*---------------------------------------------------------
+    متد _handleSearch
+
+    وظیفه: مدیریت جستجوی خدمات
+
+    ورودی‌ها: query (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _handleSearch(query) {
+        this._searchQuery = query || '';
+        this._currentPage = 1;
+        this._renderServices();
+    }
+
+    /*---------------------------------------------------------
+    متد _handleTypeFilter
+
+    وظیفه: مدیریت فیلتر نوع
+
+    ورودی‌ها: type (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _handleTypeFilter(type) {
+        this._selectedType = type || '';
+        this._currentPage = 1;
+        this._renderServices();
+    }
+
+    /*---------------------------------------------------------
+    متد _refreshServices
+
+    وظیفه: بازخوانی خدمات از سرور
+
+    ورودی‌ها: none
+
+    خروجی: Promise<void>
+
+    ---------------------------------------------------------*/
+    async _refreshServices() {
+        try {
+            this._services = await Services.refresh();
+            this._types = await Services.getTypes();
+            this._filteredServices = [...this._services];
+            this._currentPage = 1;
+            this._populateTypes();
+            this._renderServices();
+            utils.toast(
+                translator.translate('servicesRefreshed') || 'خدمات به‌روزرسانی شدند.',
+                'success'
+            );
+        } catch (error) {
+            utils.toast(
+                translator.translate('refreshFailed') || 'به‌روزرسانی با شکست مواجه شد.',
                 'error'
             );
         }
@@ -442,18 +505,14 @@ class ServicesPage {
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(this._searchDebounceTimer);
                 this._searchDebounceTimer = setTimeout(() => {
-                    this._searchQuery = e.target.value;
-                    this._currentPage = 1;
-                    this._renderServices();
+                    this._handleSearch(e.target.value);
                 }, 300);
             });
 
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderServices();
+                    this._handleSearch(searchInput.value);
                 }
             });
         }
@@ -461,9 +520,7 @@ class ServicesPage {
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
                 if (searchInput) {
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderServices();
+                    this._handleSearch(searchInput.value);
                 }
             });
         }
@@ -472,9 +529,7 @@ class ServicesPage {
         const typeFilter = document.getElementById('serviceTypeFilter');
         if (typeFilter) {
             typeFilter.addEventListener('change', (e) => {
-                this._selectedType = e.target.value;
-                this._currentPage = 1;
-                this._renderServices();
+                this._handleTypeFilter(e.target.value);
             });
         }
     }
@@ -512,76 +567,13 @@ class ServicesPage {
 
     ---------------------------------------------------------*/
     _updateLanguage() {
-        if (this._serviceList) {
-            this._serviceList._updateLanguage();
+        if (this._element && translator && translator.loaded) {
+            translator.translateElement(this._element);
+            // بازرندر گزینه‌های فیلتر
+            this._populateTypes();
+            // بازرندر خدمات
+            this._renderServices();
         }
-        if (this._pagination) {
-            this._pagination.setLanguage(this._language);
-        }
-        // به‌روزرسانی placeholder جستجو
-        const searchInput = document.getElementById('serviceSearchInput');
-        if (searchInput) {
-            searchInput.placeholder = translator.translate('searchServices') || 'جستجوی خدمات...';
-        }
-        // به‌روزرسانی گزینه‌های فیلتر
-        this._populateTypes();
-        // به‌روزرسانی تعداد نتایج
-        this._renderServices();
-    }
-
-    /*---------------------------------------------------------
-    متد _showLoading
-
-    وظیفه: نمایش وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _showLoading() {
-        const container = document.getElementById('servicesList');
-        if (container) {
-            container.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:3rem 0;">
-                    <div class="spinner" style="margin:0 auto 1rem;"></div>
-                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
-                </div>
-            `;
-        }
-    }
-
-    /*---------------------------------------------------------
-    متد _hideLoading
-
-    وظیفه: مخفی کردن وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _hideLoading() {
-        // توسط _renderServices مدیریت می‌شود
-    }
-
-    /*---------------------------------------------------------
-    متد refresh
-
-    وظیفه: بازخوانی کامل صفحه
-
-    ورودی‌ها: none
-
-    خروجی: Promise<void>
-
-    ---------------------------------------------------------*/
-    async refresh() {
-        this._searchQuery = '';
-        this._selectedType = '';
-        this._currentPage = 1;
-        await this._loadData();
-        this._populateTypes();
-        this._renderServices();
     }
 
     /*---------------------------------------------------------

@@ -819,4 +819,5 @@ class Utils {
 
 // ===== صادرات =====
 export { Utils };
+export const utils = Utils;
 export default Utils;

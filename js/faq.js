@@ -1,613 +1,312 @@
 /*=========================================================
-نام فایل: faq.js
+نام فایل: faq.js (سرویس)
 
-وظیفه: صفحه سوالات متداول (FAQ) با قابلیت نمایش لیست سوالات،
-جستجو، فیلتر، باز و بسته شدن خودکار، و صفحه‌بندی
+وظیفه: مدیریت داده‌های سوالات متداول شامل دریافت از API،
+کش کردن، جستجو و ارائه به صفحات
 
 نویسنده: تیم توسعه سورنا فناور سینا
 
 تاریخ: ۱۴۰۵/۰۴/۱۲
 =========================================================*/
 
-import { State } from '../js/state.js';
-import { translator } from '../js/translator.js';
-import { api } from '../js/api.js';
-import { utils } from '../js/utils.js';
-import { FAQItemList } from '../components/faqItem.js';
-import { Pagination } from '../components/pagination.js';
+import { api } from './api.js';
+import { State } from './state.js';
+import { Storage } from './storage.js';
+import { utils } from './utils.js';
 
 /*---------------------------------------------------------
-کلاس FAQPage
+کلاس FAQService
 
-وظیفه: مدیریت و رندر صفحه سوالات متداول
+وظیفه: مدیریت داده‌های سوالات متداول
 
 ---------------------------------------------------------*/
-class FAQPage {
-    /*---------------------------------------------------------
-    متد constructor
-
-    وظیفه: مقداردهی اولیه صفحه سوالات متداول
-
-    ورودی‌ها: options (object)
-
-    خروجی: instance
-
-    ---------------------------------------------------------*/
-    constructor(options = {}) {
-        this.options = {
-            container: '#faq',
-            ...options,
-        };
-        this._element = null;
-        this._initialized = false;
-        this._language = State.get('language') || 'fa';
-        this._faqList = null;
-        this._pagination = null;
-        this._faqItems = [];
-        this._filteredItems = [];
-        this._currentPage = 1;
-        this._itemsPerPage = 10;
-        this._searchQuery = '';
-        this._isLoading = false;
-        this._searchDebounceTimer = null;
-        this._openFirstByDefault = true;
+class FAQService {
+    constructor() {
+        this._cacheKey = 'faq_data';
+        this._cacheTTL = 30 * 60 * 1000; // ۳۰ دقیقه
+        this._items = [];
+        this._loaded = false;
+        this._lastFetch = 0;
     }
 
     /*---------------------------------------------------------
-    متد init
+    متد loadFAQ
 
-    وظیفه: مقداردهی اولیه و رندر صفحه سوالات متداول
+    وظیفه: بارگذاری سوالات متداول از کش یا API
 
-    ورودی‌ها: none
+    ورودی‌ها: forceRefresh (boolean)
 
-    خروجی: Promise<void>
+    خروجی: Promise<array>
 
     ---------------------------------------------------------*/
-    async init() {
-        if (this._initialized) return;
-
-        // دریافت المان اصلی
-        this._element = document.querySelector(this.options.container);
-        if (!this._element) {
-            console.warn('⚠️ المان صفحه سوالات متداول یافت نشد.');
-            return;
+    async loadFAQ(forceRefresh = false) {
+        // اگر داده در حافظه موجود است و نیاز به بازخوانی نیست
+        if (!forceRefresh && this._loaded && this._items.length > 0) {
+            return this._items;
         }
 
-        // بارگذاری داده‌ها
-        await this._loadData();
+        // بررسی کش در Storage
+        if (!forceRefresh) {
+            const cached = Storage.get(this._cacheKey);
+            if (cached && cached.timestamp && (Date.now() - cached.timestamp) < this._cacheTTL) {
+                this._items = cached.data || [];
+                this._loaded = true;
+                this._lastFetch = cached.timestamp;
+                return this._items;
+            }
+        }
 
-        // ایجاد ساختار صفحه
-        this._buildPageStructure();
-
-        // مقداردهی کامپوننت‌ها
-        this._initComponents();
-
-        // اتصال رویدادها
-        this._bindEvents();
-
-        // اشتراک در تغییرات وضعیت
-        this._subscribeToState();
-
-        this._initialized = true;
-        console.log('✅ FAQPage مقداردهی شد.');
-    }
-
-    /*---------------------------------------------------------
-    متد _loadData
-
-    وظیفه: بارگذاری داده‌های سوالات متداول از API
-
-    ورودی‌ها: none
-
-    خروجی: Promise<void>
-
-    ---------------------------------------------------------*/
-    async _loadData() {
+        // دریافت از API
         try {
-            this._isLoading = true;
-            this._showLoading();
-
             const response = await api.get('/faq');
             if (response?.success && response?.data) {
-                this._faqItems = response.data;
-                this._filteredItems = [...this._faqItems];
+                this._items = response.data;
+                this._loaded = true;
+                this._lastFetch = Date.now();
+                // ذخیره در کش
+                Storage.set(this._cacheKey, {
+                    data: this._items,
+                    timestamp: this._lastFetch,
+                });
+                // ذخیره در State
+                State.set('faq', this._items);
+                return this._items;
+            } else {
+                throw new Error(response?.message || 'خطا در دریافت سوالات متداول');
             }
-
         } catch (error) {
-            console.warn('⚠️ خطا در بارگذاری سوالات متداول:', error);
-            utils.toast(
-                translator.translate('loadFAQError') || 'خطا در بارگذاری سوالات متداول.',
-                'error'
-            );
-        } finally {
-            this._isLoading = false;
-            this._hideLoading();
+            console.error('❌ خطا در دریافت سوالات متداول:', error);
+            // در صورت خطا، داده‌های نمونه برگردانده می‌شود
+            this._items = this._getMockFAQ();
+            this._loaded = true;
+            return this._items;
         }
     }
 
     /*---------------------------------------------------------
-    متد _buildPageStructure
+    متد getFAQ
 
-    وظیفه: ایجاد ساختار HTML صفحه
+    وظیفه: دریافت لیست سوالات متداول
 
     ورودی‌ها: none
 
-    خروجی: void
+    خروجی: array
 
     ---------------------------------------------------------*/
-    _buildPageStructure() {
-        if (this._element.querySelector('.faq-page__wrapper')) {
-            return;
+    async getFAQ() {
+        if (!this._loaded) {
+            await this.loadFAQ();
         }
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'faq-page__wrapper';
-
-        // هدر صفحه
-        const header = document.createElement('div');
-        header.className = 'faq-page__header';
-        header.innerHTML = `
-            <h2 class="section__title" data-i18n="faqTitle">سوالات متداول</h2>
-            <p class="section__subtitle" data-i18n="faqSub">پاسخ به سوالات رایج درباره محصولات و خدمات شرکت</p>
-        `;
-        wrapper.appendChild(header);
-
-        // نوار ابزار (جستجو)
-        const toolbar = document.createElement('div');
-        toolbar.className = 'faq-page__toolbar';
-        toolbar.innerHTML = `
-            <div class="faq-page__search">
-                <input type="text" id="faqSearchInput" class="auth__input" 
-                       placeholder="${translator.translate('searchFAQ') || 'جستجوی سوالات...'}" 
-                       data-placeholder="searchFAQ" />
-                <button class="btn btn--primary" id="faqSearchBtn">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
-            <div class="faq-page__actions">
-                <button class="btn btn--outline" id="faqExpandAllBtn">
-                    <i class="fas fa-plus-circle"></i> ${translator.translate('expandAll') || 'باز کردن همه'}
-                </button>
-                <button class="btn btn--outline" id="faqCollapseAllBtn">
-                    <i class="fas fa-minus-circle"></i> ${translator.translate('collapseAll') || 'بستن همه'}
-                </button>
-            </div>
-            <div class="faq-page__results">
-                <span id="faqResultsCount">0 ${translator.translate('questions') || 'سوال'}</span>
-            </div>
-        `;
-        wrapper.appendChild(toolbar);
-
-        // کانتینر سوالات
-        const faqContainer = document.createElement('div');
-        faqContainer.id = 'faqContainer';
-        faqContainer.className = 'faq__list';
-        wrapper.appendChild(faqContainer);
-
-        // کانتینر صفحه‌بندی
-        const paginationContainer = document.createElement('div');
-        paginationContainer.id = 'faqPagination';
-        paginationContainer.className = 'faq-page__pagination';
-        wrapper.appendChild(paginationContainer);
-
-        // افزودن به صفحه
-        this._element.appendChild(wrapper);
-
-        // ترجمه
-        if (translator && translator.loaded) {
-            setTimeout(() => {
-                translator.translateElement(this._element);
-            }, 50);
-        }
+        return [...this._items];
     }
 
     /*---------------------------------------------------------
-    متد _initComponents
+    متد getFAQById
 
-    وظیفه: مقداردهی کامپوننت‌های صفحه
+    وظیفه: دریافت یک سوال با شناسه
 
-    ورودی‌ها: none
+    ورودی‌ها: id (string|number)
 
-    خروجی: void
+    خروجی: object|null
 
     ---------------------------------------------------------*/
-    _initComponents() {
-        // ---- لیست سوالات ----
-        const faqContainer = document.getElementById('faqContainer');
-        if (faqContainer) {
-            this._faqList = new FAQItemList(faqContainer, {
-                openByDefault: this._openFirstByDefault,
-                allowMultipleOpen: true,
-                onToggle: (faq, isOpen) => {
-                    // در صورت نیاز
-                },
-            });
-            this._faqList.init();
-        }
-
-        // ---- صفحه‌بندی ----
-        const paginationContainer = document.getElementById('faqPagination');
-        if (paginationContainer) {
-            this._pagination = new Pagination({
-                totalItems: this._filteredItems.length,
-                itemsPerPage: this._itemsPerPage,
-                currentPage: this._currentPage,
-                visiblePages: 5,
-                showFirstLast: true,
-                showPrevNext: true,
-                showPageSize: true,
-                pageSizes: [5, 10, 20, 50],
-                onPageChange: (page) => {
-                    this._currentPage = page;
-                    this._renderFAQ();
-                },
-                onPageSizeChange: (size) => {
-                    this._itemsPerPage = size;
-                    this._currentPage = 1;
-                    this._renderFAQ();
-                },
-            });
-            paginationContainer.appendChild(this._pagination.render());
-        }
-
-        // رندر اولیه سوالات
-        this._renderFAQ();
+    async getFAQById(id) {
+        const items = await this.getFAQ();
+        return items.find(item => item.id === id) || null;
     }
 
     /*---------------------------------------------------------
-    متد _renderFAQ
+    متد searchFAQ
 
-    وظیفه: رندر سوالات بر اساس جستجو و صفحه‌بندی
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _renderFAQ() {
-        if (!this._faqList) return;
-
-        // اعمال فیلتر جستجو
-        this._applyFilters();
-
-        // محاسبه offset و limit
-        const start = (this._currentPage - 1) * this._itemsPerPage;
-        const end = Math.min(start + this._itemsPerPage, this._filteredItems.length);
-        const pageItems = this._filteredItems.slice(start, end);
-
-        // به‌روزرسانی لیست سوالات
-        this._faqList.setFAQ(pageItems);
-
-        // به‌روزرسانی تعداد نتایج
-        const countEl = document.getElementById('faqResultsCount');
-        if (countEl) {
-            const total = this._filteredItems.length;
-            const text = translator.translate('questions') || 'سوال';
-            countEl.textContent = `${total} ${text}`;
-        }
-
-        // به‌روزرسانی صفحه‌بندی
-        if (this._pagination) {
-            this._pagination.setTotalItems(this._filteredItems.length);
-            this._pagination.goToPage(this._currentPage);
-        }
-
-        // اگر نتیجه‌ای وجود نداشت، پیام نمایش داده شود
-        if (this._filteredItems.length === 0) {
-            const container = document.getElementById('faqContainer');
-            if (container) {
-                const emptyMsg = document.createElement('p');
-                emptyMsg.className = 'text-center text-muted';
-                emptyMsg.textContent = translator.translate('noFAQFound') || 'سوالی یافت نشد.';
-                emptyMsg.setAttribute('data-i18n', 'noFAQFound');
-                container.appendChild(emptyMsg);
-                if (translator && translator.loaded) {
-                    translator.translateElement(emptyMsg);
-                }
-            }
-        } else {
-            // اگر اولین سوال باز باشد
-            if (this._openFirstByDefault && pageItems.length > 0) {
-                const items = this._faqList.getItems();
-                if (items.length > 0) {
-                    // فقط اولین آیتم را باز می‌کنیم
-                    items.forEach((item, index) => {
-                        if (index === 0) {
-                            item.open();
-                        } else {
-                            item.close();
-                        }
-                    });
-                }
-            }
-        }
-    }
-
-    /*---------------------------------------------------------
-    متد _applyFilters
-
-    وظیفه: اعمال فیلتر جستجو
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _applyFilters() {
-        let filtered = [...this._faqItems];
-
-        // فیلتر جستجو
-        if (this._searchQuery) {
-            const query = this._searchQuery.toLowerCase().trim();
-            filtered = filtered.filter(item =>
-                item.question?.toLowerCase().includes(query) ||
-                item.answer?.toLowerCase().includes(query)
-            );
-        }
-
-        this._filteredItems = filtered;
-    }
-
-    /*---------------------------------------------------------
-    متد _bindEvents
-
-    وظیفه: اتصال رویدادهای صفحه
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _bindEvents() {
-        // جستجو
-        const searchInput = document.getElementById('faqSearchInput');
-        const searchBtn = document.getElementById('faqSearchBtn');
-
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(this._searchDebounceTimer);
-                this._searchDebounceTimer = setTimeout(() => {
-                    this._searchQuery = e.target.value;
-                    this._currentPage = 1;
-                    this._renderFAQ();
-                }, 300);
-            });
-
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderFAQ();
-                }
-            });
-        }
-
-        if (searchBtn) {
-            searchBtn.addEventListener('click', () => {
-                if (searchInput) {
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderFAQ();
-                }
-            });
-        }
-
-        // دکمه باز کردن همه
-        const expandBtn = document.getElementById('faqExpandAllBtn');
-        if (expandBtn) {
-            expandBtn.addEventListener('click', () => {
-                if (this._faqList) {
-                    this._faqList.openAll();
-                }
-            });
-        }
-
-        // دکمه بستن همه
-        const collapseBtn = document.getElementById('faqCollapseAllBtn');
-        if (collapseBtn) {
-            collapseBtn.addEventListener('click', () => {
-                if (this._faqList) {
-                    this._faqList.closeAll();
-                }
-            });
-        }
-    }
-
-    /*---------------------------------------------------------
-    متد _subscribeToState
-
-    وظیفه: اشتراک در تغییرات وضعیت
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _subscribeToState() {
-        State.subscribe('language', (lang) => {
-            this._language = lang || 'fa';
-            this._updateLanguage();
-        });
-
-        document.addEventListener('langChanged', (e) => {
-            this._language = e.detail.lang || 'fa';
-            this._updateLanguage();
-        });
-    }
-
-    /*---------------------------------------------------------
-    متد _updateLanguage
-
-    وظیفه: به‌روزرسانی زبان
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _updateLanguage() {
-        if (this._faqList) {
-            this._faqList._updateLanguage();
-        }
-        if (this._pagination) {
-            this._pagination.setLanguage(this._language);
-        }
-        // به‌روزرسانی placeholder جستجو
-        const searchInput = document.getElementById('faqSearchInput');
-        if (searchInput) {
-            searchInput.placeholder = translator.translate('searchFAQ') || 'جستجوی سوالات...';
-        }
-        // به‌روزرسانی دکمه‌ها
-        const expandBtn = document.getElementById('faqExpandAllBtn');
-        if (expandBtn) {
-            expandBtn.innerHTML = `<i class="fas fa-plus-circle"></i> ${translator.translate('expandAll') || 'باز کردن همه'}`;
-        }
-        const collapseBtn = document.getElementById('faqCollapseAllBtn');
-        if (collapseBtn) {
-            collapseBtn.innerHTML = `<i class="fas fa-minus-circle"></i> ${translator.translate('collapseAll') || 'بستن همه'}`;
-        }
-        // به‌روزرسانی تعداد نتایج
-        this._renderFAQ();
-    }
-
-    /*---------------------------------------------------------
-    متد _showLoading
-
-    وظیفه: نمایش وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _showLoading() {
-        const container = document.getElementById('faqContainer');
-        if (container) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:3rem 0;">
-                    <div class="spinner" style="margin:0 auto 1rem;"></div>
-                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
-                </div>
-            `;
-        }
-    }
-
-    /*---------------------------------------------------------
-    متد _hideLoading
-
-    وظیفه: مخفی کردن وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _hideLoading() {
-        // توسط _renderFAQ مدیریت می‌شود
-    }
-
-    /*---------------------------------------------------------
-    متد search
-
-    وظیفه: جستجوی سوالات با کلیدواژه مشخص
+    وظیفه: جستجوی سوالات بر اساس کلیدواژه
 
     ورودی‌ها: query (string)
 
-    خروجی: void
+    خروجی: array
 
     ---------------------------------------------------------*/
-    search(query) {
-        this._searchQuery = query || '';
-        this._currentPage = 1;
-        this._renderFAQ();
-
-        // به‌روزرسانی input جستجو
-        const searchInput = document.getElementById('faqSearchInput');
-        if (searchInput) {
-            searchInput.value = this._searchQuery;
+    async searchFAQ(query) {
+        const items = await this.getFAQ();
+        if (!query || typeof query !== 'string' || query.trim() === '') {
+            return items;
         }
-    }
-
-    /*---------------------------------------------------------
-    متد expandAll
-
-    وظیفه: باز کردن تمام سوالات
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    expandAll() {
-        if (this._faqList) {
-            this._faqList.openAll();
-        }
-    }
-
-    /*---------------------------------------------------------
-    متد collapseAll
-
-    وظیفه: بستن تمام سوالات
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    collapseAll() {
-        if (this._faqList) {
-            this._faqList.closeAll();
-        }
+        const q = query.trim().toLowerCase();
+        return items.filter(item =>
+            item.question?.toLowerCase().includes(q) ||
+            item.answer?.toLowerCase().includes(q)
+        );
     }
 
     /*---------------------------------------------------------
     متد refresh
 
-    وظیفه: بازخوانی کامل صفحه
+    وظیفه: بازخوانی اجباری سوالات از سرور
 
     ورودی‌ها: none
 
-    خروجی: Promise<void>
+    خروجی: Promise<array>
 
     ---------------------------------------------------------*/
     async refresh() {
-        this._searchQuery = '';
-        this._currentPage = 1;
-        await this._loadData();
-        this._renderFAQ();
-        // به‌روزرسانی input جستجو
-        const searchInput = document.getElementById('faqSearchInput');
-        if (searchInput) {
-            searchInput.value = '';
+        Storage.remove(this._cacheKey);
+        this._loaded = false;
+        this._items = [];
+        return this.loadFAQ(true);
+    }
+
+    /*---------------------------------------------------------
+    متد addFAQ
+
+    وظیفه: افزودن سوال جدید (در صورت وجود API)
+
+    ورودی‌ها: faq (object)
+
+    خروجی: Promise<object>
+
+    ---------------------------------------------------------*/
+    async addFAQ(faq) {
+        try {
+            const response = await api.post('/faq', faq);
+            if (response?.success) {
+                // بازخوانی لیست
+                await this.refresh();
+                return {
+                    success: true,
+                    message: response.message || 'سوال با موفقیت اضافه شد.',
+                    data: response.data,
+                };
+            } else {
+                throw new Error(response?.message || 'افزودن سوال با شکست مواجه شد.');
+            }
+        } catch (error) {
+            console.error('❌ خطا در افزودن سوال:', error);
+            throw error;
         }
     }
 
     /*---------------------------------------------------------
-    متد destroy
+    متد updateFAQ
 
-    وظیفه: پاکسازی منابع
+    وظیفه: به‌روزرسانی سوال (در صورت وجود API)
+
+    ورودی‌ها: id (string|number), faq (object)
+
+    خروجی: Promise<object>
+
+    ---------------------------------------------------------*/
+    async updateFAQ(id, faq) {
+        try {
+            const response = await api.put(`/faq/${id}`, faq);
+            if (response?.success) {
+                await this.refresh();
+                return {
+                    success: true,
+                    message: response.message || 'سوال با موفقیت به‌روزرسانی شد.',
+                    data: response.data,
+                };
+            } else {
+                throw new Error(response?.message || 'به‌روزرسانی سوال با شکست مواجه شد.');
+            }
+        } catch (error) {
+            console.error('❌ خطا در به‌روزرسانی سوال:', error);
+            throw error;
+        }
+    }
+
+    /*---------------------------------------------------------
+    متد deleteFAQ
+
+    وظیفه: حذف سوال (در صورت وجود API)
+
+    ورودی‌ها: id (string|number)
+
+    خروجی: Promise<object>
+
+    ---------------------------------------------------------*/
+    async deleteFAQ(id) {
+        try {
+            const response = await api.delete(`/faq/${id}`);
+            if (response?.success) {
+                await this.refresh();
+                return {
+                    success: true,
+                    message: response.message || 'سوال با موفقیت حذف شد.',
+                };
+            } else {
+                throw new Error(response?.message || 'حذف سوال با شکست مواجه شد.');
+            }
+        } catch (error) {
+            console.error('❌ خطا در حذف سوال:', error);
+            throw error;
+        }
+    }
+
+    /*---------------------------------------------------------
+    متد clearCache
+
+    وظیفه: پاکسازی کش
 
     ورودی‌ها: none
 
     خروجی: void
 
     ---------------------------------------------------------*/
-    destroy() {
-        if (this._faqList) {
-            this._faqList.destroy();
-            this._faqList = null;
-        }
-        if (this._pagination) {
-            this._pagination.destroy();
-            this._pagination = null;
-        }
-        clearTimeout(this._searchDebounceTimer);
-        this._initialized = false;
-        console.log('🧹 FAQPage پاکسازی شد.');
+    clearCache() {
+        Storage.remove(this._cacheKey);
+        this._loaded = false;
+        this._items = [];
+        this._lastFetch = 0;
+    }
+
+    /*---------------------------------------------------------
+    متد _getMockFAQ
+
+    وظیفه: داده‌های نمونه برای حالت آفلاین یا خطا
+
+    ورودی‌ها: none
+
+    خروجی: array
+
+    ---------------------------------------------------------*/
+    _getMockFAQ() {
+        return [
+            {
+                id: 1,
+                question: 'تفاوت سیستم حجمی با Air-O-Cell چیست؟',
+                answer: 'سیستم حجمی امکان نمونه‌گیری مداوم و کمی‌سازی دقیق را فراهم می‌کند، در حالی که Air-O-Cell بیشتر برای تست سریع محیط‌های داخلی کاربرد دارد.'
+            },
+            {
+                id: 2,
+                question: 'آیا دستگاه‌ها قابلیت اتصال آنلاین دارند؟',
+                answer: 'بله، مدل‌های جدید دستگاه‌های نمونه‌گیری مانند SFS-5000 و SFS-7000 دارای قابلیت انتقال داده، ذخیره‌سازی ابری و داشبورد تحت وب هستند.'
+            },
+            {
+                id: 3,
+                question: 'آیا خدمات نمونه‌گیری در محل انجام می‌شود؟',
+                answer: 'بله، تیم تخصصی نمونه‌گیری شرکت سورنا فناور سینا برای بیمارستان‌ها، صنایع غذایی، گلخانه‌ها و سایر محیط‌های مورد نیاز اعزام می‌شود.'
+            },
+            {
+                id: 4,
+                question: 'هزینه خرید دستگاه‌ها چگونه محاسبه می‌شود؟',
+                answer: 'هزینه دستگاه‌ها بر اساس مدل، قابلیت‌ها و تجهیزات جانبی محاسبه می‌شود. برای دریافت قیمت دقیق با واحد فروش تماس بگیرید.'
+            },
+            {
+                id: 5,
+                question: 'آیا گارانتی و خدمات پس از فروش ارائه می‌شود؟',
+                answer: 'بله، تمام دستگاه‌های شرکت دارای گارانتی ۱۲ تا ۳۶ ماهه و خدمات پس از فروش شامل تعمیرات، کالیبراسیون و تأمین قطعات یدکی هستند.'
+            },
+            {
+                id: 6,
+                question: 'آیا امکان سفارش دستگاه به صورت آنلاین وجود دارد؟',
+                answer: 'بله، شما می‌توانید از طریق وب‌سایت شرکت، بخش محصولات، دستگاه مورد نظر را انتخاب و سفارش دهید.'
+            }
+        ];
     }
 }
 
+// ===== ایجاد نمونه واحد =====
+const FAQ = new FAQService();
+
 // ===== صادرات =====
-export { FAQPage };
-export default FAQPage;
+export { FAQService, FAQ };
+export default FAQ;

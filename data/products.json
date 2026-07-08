@@ -5,11 +5,11 @@
     "description": "دستگاه حجمی ۷ روزه با قابلیت پایش مداوم اسپور قارچ و گرده گیاهان، مجهز به کنترل جریان هوا، نمایشگر LCD و اتصال به سامانه ابری. شکست انحصار Burkard.",
     "price": "۷۲۰ میلیون تومان",
     "images": [
-      "pics/Sp01.jpg",
-      "pics/Sp02.jpg",
-      "pics/Sp03.jpg",
-      "pics/Sp04.jpg",
-      "pics/Sp05.jpg"
+      "/pics/Sp01.jpg",
+      "/pics/Sp02.jpg",
+      "/pics/Sp03.jpg",
+      "/pics/Sp04.jpg",
+      "/pics/Sp05.jpg"
     ],
     "features": [
       "پایش ۷ روزه",
@@ -46,11 +46,11 @@
     "description": "نمونه‌گیر دوکاره با قابلیت تنظیم دوره نمونه‌گیری ۱ تا ۱۴ روز، دارای حافظه داخلی و خروجی USB.",
     "price": "۵۹۰ میلیون تومان",
     "images": [
-      "pics/mic01.jpg",
-      "pics/mic02.jpg",
-      "pics/mic03.jpg",
-      "pics/mic04.jpg",
-      "pics/mic05.jpg"
+      "/pics/mic01.jpg",
+      "/pics/mic02.jpg",
+      "/pics/mic03.jpg",
+      "/pics/mic04.jpg",
+      "/pics/mic05.jpg"
     ],
     "features": [
       "تنظیم بازه زمانی",
@@ -66,11 +66,11 @@
     "description": "پیشرفته‌ترین نمونه‌گیر هوای دیجیتال با نمایشگر لمسی، قابلیت کالیبراسیون خودکار و اتصال به اینترنت.",
     "price": "۸۲۰ میلیون تومان",
     "images": [
-      "pics/Sam01.jpg",
-      "pics/Sam02.jpg",
-      "pics/Sam03.jpg",
-      "pics/Sam04.jpg",
-      "pics/Sam04.png"
+      "/pics/Sam01.jpg",
+      "/pics/Sam02.jpg",
+      "/pics/Sam03.jpg",
+      "/pics/Sam04.jpg",
+      "/pics/Sam04.png"
     ],
     "features": [
       "اتصال اینترنت",

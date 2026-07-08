@@ -1,8 +1,8 @@
 /*=========================================================
-نام فایل: dashboard.js
+نام فایل: dashboard.js (صفحه)
 
-وظیفه: صفحه داشبورد کاربری با نمایش آمار، نمودارها،
-اطلاعات کاربری، فعالیت‌های اخیر و وضعیت دستگاه‌ها
+وظیفه: کنترلر صفحه داشبورد – رندر UI، مدیریت رویدادها،
+استفاده از سرویس Dashboard و کامپوننت‌ها
 
 نویسنده: تیم توسعه سورنا فناور سینا
 
@@ -11,28 +11,19 @@
 
 import { State } from '../js/state.js';
 import { translator } from '../js/translator.js';
-import { api } from '../js/api.js';
+import { Dashboard } from '../js/dashboard.js';
 import { Auth } from '../js/auth.js';
-import { utils } from '../js/utils.js';
 import { router } from '../js/router.js';
+import { utils } from '../js/utils.js';
+import { Modal } from '../js/modal.js';
 
 /*---------------------------------------------------------
 کلاس DashboardPage
 
-وظیفه: مدیریت و رندر صفحه داشبورد
+وظیفه: مدیریت صفحه داشبورد
 
 ---------------------------------------------------------*/
 class DashboardPage {
-    /*---------------------------------------------------------
-    متد constructor
-
-    وظیفه: مقداردهی اولیه صفحه داشبورد
-
-    ورودی‌ها: options (object)
-
-    خروجی: instance
-
-    ---------------------------------------------------------*/
     constructor(options = {}) {
         this.options = {
             container: '#dashboard',
@@ -42,7 +33,7 @@ class DashboardPage {
         this._initialized = false;
         this._language = State.get('language') || 'fa';
         this._isLoading = false;
-        this._dashboardData = null;
+        this._data = null;
         this._refreshInterval = null;
         this._refreshIntervalTime = 60000; // ۱ دقیقه
     }
@@ -50,7 +41,7 @@ class DashboardPage {
     /*---------------------------------------------------------
     متد init
 
-    وظیفه: مقداردهی اولیه و رندر صفحه داشبورد
+    وظیفه: مقداردهی اولیه و رندر صفحه
 
     ورودی‌ها: none
 
@@ -60,7 +51,6 @@ class DashboardPage {
     async init() {
         if (this._initialized) return;
 
-        // دریافت المان اصلی
         this._element = document.querySelector(this.options.container);
         if (!this._element) {
             console.warn('⚠️ المان صفحه داشبورد یافت نشد.');
@@ -88,7 +78,7 @@ class DashboardPage {
         // اشتراک در تغییرات وضعیت
         this._subscribeToState();
 
-        // شروع تایمر به‌روزرسانی خودکار
+        // شروع به‌روزرسانی خودکار
         this._startAutoRefresh();
 
         this._initialized = true;
@@ -98,7 +88,7 @@ class DashboardPage {
     /*---------------------------------------------------------
     متد _loadData
 
-    وظیفه: بارگذاری داده‌های داشبورد از API
+    وظیفه: بارگذاری داده‌ها از سرویس
 
     ورودی‌ها: none
 
@@ -109,20 +99,10 @@ class DashboardPage {
         try {
             this._isLoading = true;
             this._showLoading();
-
-            const response = await api.get('/dashboard/data');
-            if (response?.success && response?.data) {
-                this._dashboardData = response.data;
-                // ذخیره در State
-                State.set('dashboardData', this._dashboardData);
-            } else {
-                throw new Error(response?.message || 'خطا در بارگذاری داده‌های داشبورد');
-            }
-
+            this._data = await Dashboard.getDashboardData();
         } catch (error) {
-            console.warn('⚠️ خطا در بارگذاری داشبورد:', error);
-            // استفاده از داده‌های نمونه در صورت خطا
-            this._dashboardData = this._getMockData();
+            console.warn('⚠️ خطا در بارگذاری داده‌ها:', error);
+            this._data = await Dashboard.getDashboardData(); // داده‌های نمونه
             utils.toast(
                 translator.translate('dashboardLoadError') || 'خطا در بارگذاری داده‌های داشبورد.',
                 'error'
@@ -131,54 +111,6 @@ class DashboardPage {
             this._isLoading = false;
             this._hideLoading();
         }
-    }
-
-    /*---------------------------------------------------------
-    متد _getMockData
-
-    وظیفه: دریافت داده‌های نمونه برای نمایش در داشبورد
-
-    ورودی‌ها: none
-
-    خروجی: object
-
-    ---------------------------------------------------------*/
-    _getMockData() {
-        return {
-            stats: {
-                totalSamples: 1247,
-                activeDevices: 38,
-                alerts: 5,
-                averageAccuracy: 96.7,
-                totalUsers: 12,
-                pendingOrders: 3,
-            },
-            chartData: {
-                labels: ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور'],
-                datasets: [
-                    { label: 'اسپور قارچ', data: [45, 52, 38, 65, 78, 92] },
-                    { label: 'گرده گیاهان', data: [30, 35, 42, 50, 45, 38] },
-                ],
-            },
-            recentActivities: [
-                { id: 1, type: 'sample', title: 'نمونه‌گیری جدید در ایستگاه شماره ۳', time: '۲۰ دقیقه پیش', status: 'completed' },
-                { id: 2, type: 'device', title: 'دستگاه SFS-5000 کالیبره شد', time: '۱ ساعت پیش', status: 'success' },
-                { id: 3, type: 'alert', title: 'هشدار: افزایش اسپور قارچ', time: '۲ ساعت پیش', status: 'warning' },
-                { id: 4, type: 'order', title: 'سفارش جدید ثبت شد (شماره ORD-12345)', time: '۳ ساعت پیش', status: 'pending' },
-                { id: 5, type: 'user', title: 'کاربر جدید ثبت نام کرد', time: '۵ ساعت پیش', status: 'info' },
-            ],
-            devices: [
-                { id: 1, name: 'دستگاه SFS-5000', status: 'online', lastUpdate: '۲ دقیقه پیش', location: 'آزمایشگاه مرکزی' },
-                { id: 2, name: 'دستگاه SFS-7000', status: 'online', lastUpdate: '۵ دقیقه پیش', location: 'ایستگاه شماره ۱' },
-                { id: 3, name: 'نمونه‌گیر هوای اماکن', status: 'offline', lastUpdate: '۲ ساعت پیش', location: 'بیمارستان' },
-                { id: 4, name: 'اسپورتراپ دیجیتال', status: 'online', lastUpdate: '۱۰ دقیقه پیش', location: 'ایستگاه شماره ۲' },
-            ],
-            recentOrders: [
-                { id: 'ORD-001', customer: 'شرکت نمونه', total: 720000000, status: 'delivered', date: '۱۴۰۵/۰۴/۱۰' },
-                { id: 'ORD-002', customer: 'آزمایشگاه مرکزی', total: 390000000, status: 'processing', date: '۱۴۰۵/۰۴/۰۸' },
-                { id: 'ORD-003', customer: 'دانشگاه علوم پزشکی', total: 820000000, status: 'pending', date: '۱۴۰۵/۰۴/۰۵' },
-            ],
-        };
     }
 
     /*---------------------------------------------------------
@@ -192,14 +124,12 @@ class DashboardPage {
 
     ---------------------------------------------------------*/
     _buildPageStructure() {
-        if (this._element.querySelector('.dashboard-page__wrapper')) {
-            return;
-        }
+        if (this._element.querySelector('.dashboard-page__wrapper')) return;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'dashboard-page__wrapper';
 
-        // هدر صفحه
+        // هدر
         const header = document.createElement('div');
         header.className = 'dashboard-page__header';
         const user = Auth.getCurrentUser();
@@ -210,9 +140,7 @@ class DashboardPage {
             </div>
             <div class="dashboard-page__user">
                 <span class="dashboard-page__user-name">${user?.username || 'کاربر'}</span>
-                <div class="dashboard-page__user-avatar">
-                    <i class="fas fa-user"></i>
-                </div>
+                <div class="dashboard-page__user-avatar"><i class="fas fa-user"></i></div>
             </div>
         `;
         wrapper.appendChild(header);
@@ -223,7 +151,7 @@ class DashboardPage {
         statsGrid.className = 'dashboard-page__stats';
         wrapper.appendChild(statsGrid);
 
-        // نمودارها (ساده با استفاده از CSS)
+        // نمودار
         const chartsSection = document.createElement('div');
         chartsSection.className = 'dashboard-page__charts';
         chartsSection.innerHTML = `
@@ -234,11 +162,10 @@ class DashboardPage {
         `;
         wrapper.appendChild(chartsSection);
 
-        // بخش فعالیت‌های اخیر و دستگاه‌ها
+        // دو ستون: فعالیت‌ها و دستگاه‌ها
         const twoCol = document.createElement('div');
         twoCol.className = 'dashboard-page__two-col';
 
-        // فعالیت‌های اخیر
         const activities = document.createElement('div');
         activities.className = 'dashboard-page__card';
         activities.innerHTML = `
@@ -247,7 +174,6 @@ class DashboardPage {
         `;
         twoCol.appendChild(activities);
 
-        // دستگاه‌ها
         const devices = document.createElement('div');
         devices.className = 'dashboard-page__card';
         devices.innerHTML = `
@@ -290,16 +216,14 @@ class DashboardPage {
 
         // ترجمه
         if (translator && translator.loaded) {
-            setTimeout(() => {
-                translator.translateElement(this._element);
-            }, 50);
+            setTimeout(() => translator.translateElement(this._element), 50);
         }
     }
 
     /*---------------------------------------------------------
     متد _renderDashboard
 
-    وظیفه: رندر کردن داده‌ها در داشبورد
+    وظیفه: رندر کردن داده‌ها در UI
 
     ورودی‌ها: none
 
@@ -307,28 +231,16 @@ class DashboardPage {
 
     ---------------------------------------------------------*/
     _renderDashboard() {
-        if (!this._dashboardData) return;
-
-        // رندر آمار
+        if (!this._data) return;
         this._renderStats();
-
-        // رندر نمودار
         this._renderChart();
-
-        // رندر فعالیت‌های اخیر
         this._renderActivities();
-
-        // رندر دستگاه‌ها
         this._renderDevices();
-
-        // رندر سفارشات اخیر
         this._renderOrders();
     }
 
     /*---------------------------------------------------------
-    متد _renderStats
-
-    وظیفه: رندر کردن کارت‌های آماری
+    متد _renderStats - رندر آمار
 
     ورودی‌ها: none
 
@@ -339,27 +251,24 @@ class DashboardPage {
         const container = document.getElementById('dashboardStats');
         if (!container) return;
 
-        const stats = this._dashboardData.stats || {};
-        const statItems = [
+        const stats = this._data.stats || {};
+        const items = [
             { key: 'totalSamples', label: translator.translate('totalSamples') || 'کل نمونه‌ها', icon: 'fa-flask', color: '#2563eb' },
             { key: 'activeDevices', label: translator.translate('activeDevices') || 'دستگاه‌های فعال', icon: 'fa-microchip', color: '#22c55e' },
             { key: 'alerts', label: translator.translate('alerts') || 'هشدارها', icon: 'fa-bell', color: '#eab308' },
             { key: 'averageAccuracy', label: translator.translate('avgAccuracy') || 'میانگین دقت %', icon: 'fa-percentage', color: '#8b5cf6' },
-            { key: 'totalUsers', label: translator.translate('totalUsers') || 'کاربران', icon: 'fa-users', color: '#ec4899' },
-            { key: 'pendingOrders', label: translator.translate('pendingOrders') || 'سفارشات در انتظار', icon: 'fa-clock', color: '#f97316' },
         ];
 
-        container.innerHTML = statItems.map(item => {
+        container.innerHTML = items.map(item => {
             const value = stats[item.key] !== undefined ? stats[item.key] : 0;
-            // فرمت‌سازی عدد
-            const formattedValue = typeof value === 'number' ? value.toLocaleString('fa-IR') : value;
+            const formatted = typeof value === 'number' ? value.toLocaleString('fa-IR') : value;
             return `
                 <div class="dashboard-page__stat-card">
                     <div class="dashboard-page__stat-icon" style="color:${item.color};background:${item.color}22;">
                         <i class="fas ${item.icon}"></i>
                     </div>
                     <div class="dashboard-page__stat-content">
-                        <span class="dashboard-page__stat-value">${formattedValue}</span>
+                        <span class="dashboard-page__stat-value">${formatted}</span>
                         <span class="dashboard-page__stat-label">${item.label}</span>
                     </div>
                 </div>
@@ -368,9 +277,7 @@ class DashboardPage {
     }
 
     /*---------------------------------------------------------
-    متد _renderChart
-
-    وظیفه: رندر نمودار ساده با CSS
+    متد _renderChart - رندر نمودار ساده
 
     ورودی‌ها: none
 
@@ -381,8 +288,8 @@ class DashboardPage {
         const container = document.getElementById('dashboardChart');
         if (!container) return;
 
-        const chartData = this._dashboardData.chartData;
-        if (!chartData || !chartData.labels || !chartData.datasets) {
+        const chartData = this._data.chartData;
+        if (!chartData?.labels?.length || !chartData?.datasets?.length) {
             container.innerHTML = `<p class="text-muted">${translator.translate('noChartData') || 'داده‌ای برای نمایش وجود ندارد.'}</p>`;
             return;
         }
@@ -390,32 +297,25 @@ class DashboardPage {
         const labels = chartData.labels;
         const datasets = chartData.datasets;
         const colors = ['#2563eb', '#22c55e', '#eab308', '#8b5cf6'];
-
-        // ساخت نمودار میله‌ای ساده با CSS
         const maxValue = Math.max(...datasets.flatMap(d => d.data));
         const chartHeight = 200;
 
         let html = `<div class="dashboard-page__chart-bars" style="height:${chartHeight + 40}px;">`;
-
         // محور X
         html += `<div class="dashboard-page__chart-x">`;
-        labels.forEach(label => {
-            html += `<span class="dashboard-page__chart-label">${label}</span>`;
-        });
+        labels.forEach(label => html += `<span class="dashboard-page__chart-label">${label}</span>`);
         html += `</div>`;
 
-        // میله‌ها برای هر مجموعه داده
-        datasets.forEach((dataset, datasetIndex) => {
-            const color = colors[datasetIndex % colors.length];
+        datasets.forEach((dataset, idx) => {
+            const color = colors[idx % colors.length];
             html += `<div class="dashboard-page__chart-dataset">`;
-            dataset.data.forEach((value, index) => {
+            dataset.data.forEach((value, i) => {
                 const height = maxValue > 0 ? (value / maxValue) * chartHeight : 0;
                 html += `
                     <div class="dashboard-page__chart-bar-wrapper">
                         <div class="dashboard-page__chart-bar" style="height:${height}px;background:${color};">
                             <span class="dashboard-page__chart-bar-value">${value}</span>
                         </div>
-                        <span class="dashboard-page__chart-bar-label" style="display:none;">${dataset.label}</span>
                     </div>
                 `;
             });
@@ -424,8 +324,8 @@ class DashboardPage {
 
         // افسانه
         html += `<div class="dashboard-page__chart-legend">`;
-        datasets.forEach((dataset, index) => {
-            const color = colors[index % colors.length];
+        datasets.forEach((dataset, idx) => {
+            const color = colors[idx % colors.length];
             html += `
                 <span class="dashboard-page__chart-legend-item">
                     <span class="dashboard-page__chart-legend-color" style="background:${color};"></span>
@@ -434,15 +334,12 @@ class DashboardPage {
             `;
         });
         html += `</div>`;
-
         html += `</div>`;
         container.innerHTML = html;
     }
 
     /*---------------------------------------------------------
-    متد _renderActivities
-
-    وظیفه: رندر لیست فعالیت‌های اخیر
+    متد _renderActivities - رندر فعالیت‌ها
 
     ورودی‌ها: none
 
@@ -453,50 +350,30 @@ class DashboardPage {
         const container = document.getElementById('recentActivitiesList');
         if (!container) return;
 
-        const activities = this._dashboardData.recentActivities || [];
-
-        if (activities.length === 0) {
+        const activities = this._data.recentActivities || [];
+        if (!activities.length) {
             container.innerHTML = `<p class="text-muted">${translator.translate('noActivities') || 'فعالیتی یافت نشد.'}</p>`;
             return;
         }
 
-        const statusIcons = {
-            completed: 'fa-check-circle',
-            success: 'fa-check-circle',
-            warning: 'fa-exclamation-triangle',
-            pending: 'fa-clock',
-            info: 'fa-info-circle',
-        };
+        const icons = { completed: 'fa-check-circle', success: 'fa-check-circle', warning: 'fa-exclamation-triangle', pending: 'fa-clock', info: 'fa-info-circle' };
+        const colors = { completed: '#22c55e', success: '#22c55e', warning: '#eab308', pending: '#f97316', info: '#2563eb' };
 
-        const statusColors = {
-            completed: '#22c55e',
-            success: '#22c55e',
-            warning: '#eab308',
-            pending: '#f97316',
-            info: '#2563eb',
-        };
-
-        container.innerHTML = activities.map(activity => {
-            const icon = statusIcons[activity.status] || 'fa-circle';
-            const color = statusColors[activity.status] || '#64748b';
-            return `
-                <div class="dashboard-page__activity-item">
-                    <span class="dashboard-page__activity-icon" style="color:${color};">
-                        <i class="fas ${icon}"></i>
-                    </span>
-                    <div class="dashboard-page__activity-content">
-                        <span class="dashboard-page__activity-title">${activity.title}</span>
-                        <span class="dashboard-page__activity-time">${activity.time}</span>
-                    </div>
+        container.innerHTML = activities.map(act => `
+            <div class="dashboard-page__activity-item">
+                <span class="dashboard-page__activity-icon" style="color:${colors[act.status] || '#64748b'};">
+                    <i class="fas ${icons[act.status] || 'fa-circle'}"></i>
+                </span>
+                <div class="dashboard-page__activity-content">
+                    <span class="dashboard-page__activity-title">${act.title}</span>
+                    <span class="dashboard-page__activity-time">${act.time}</span>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `).join('');
     }
 
     /*---------------------------------------------------------
-    متد _renderDevices
-
-    وظیفه: رندر لیست دستگاه‌ها
+    متد _renderDevices - رندر دستگاه‌ها
 
     ورودی‌ها: none
 
@@ -507,9 +384,8 @@ class DashboardPage {
         const container = document.getElementById('devicesList');
         if (!container) return;
 
-        const devices = this._dashboardData.devices || [];
-
-        if (devices.length === 0) {
+        const devices = this._data.devices || [];
+        if (!devices.length) {
             container.innerHTML = `<p class="text-muted">${translator.translate('noDevices') || 'دستگاهی یافت نشد.'}</p>`;
             return;
         }
@@ -534,9 +410,7 @@ class DashboardPage {
     }
 
     /*---------------------------------------------------------
-    متد _renderOrders
-
-    وظیفه: رندر لیست سفارشات اخیر
+    متد _renderOrders - رندر سفارشات
 
     ورودی‌ها: none
 
@@ -547,49 +421,31 @@ class DashboardPage {
         const container = document.getElementById('recentOrdersList');
         if (!container) return;
 
-        const orders = this._dashboardData.recentOrders || [];
-
-        if (orders.length === 0) {
+        const orders = this._data.recentOrders || [];
+        if (!orders.length) {
             container.innerHTML = `<p class="text-muted">${translator.translate('noOrders') || 'سفارشی یافت نشد.'}</p>`;
             return;
         }
 
-        const statusLabels = {
-            pending: translator.translate('pending') || 'در انتظار',
-            processing: translator.translate('processing') || 'در حال پردازش',
-            delivered: translator.translate('delivered') || 'تحویل داده شد',
-            cancelled: translator.translate('cancelled') || 'لغو شده',
-        };
-
-        const statusColors = {
-            pending: '#f97316',
-            processing: '#2563eb',
-            delivered: '#22c55e',
-            cancelled: '#ef4444',
-        };
+        const statusLabels = { pending: translator.translate('statusPending') || 'در انتظار', processing: translator.translate('statusProcessing') || 'در حال پردازش', delivered: translator.translate('statusDelivered') || 'تحویل داده شد', cancelled: translator.translate('statusCancelled') || 'لغو شده' };
+        const statusColors = { pending: '#f97316', processing: '#2563eb', delivered: '#22c55e', cancelled: '#ef4444' };
 
         container.innerHTML = `
             <table class="dashboard-page__orders-table">
-                <thead>
-                    <tr>
-                        <th>${translator.translate('orderId') || 'شماره سفارش'}</th>
-                        <th>${translator.translate('customer') || 'مشتری'}</th>
-                        <th>${translator.translate('total') || 'مبلغ کل'}</th>
-                        <th>${translator.translate('status') || 'وضعیت'}</th>
-                        <th>${translator.translate('date') || 'تاریخ'}</th>
-                    </tr>
-                </thead>
+                <thead><tr>
+                    <th>${translator.translate('orderId') || 'شماره سفارش'}</th>
+                    <th>${translator.translate('customer') || 'مشتری'}</th>
+                    <th>${translator.translate('total') || 'مبلغ کل'}</th>
+                    <th>${translator.translate('status') || 'وضعیت'}</th>
+                    <th>${translator.translate('date') || 'تاریخ'}</th>
+                </tr></thead>
                 <tbody>
                     ${orders.map(order => `
                         <tr>
                             <td>${order.id}</td>
                             <td>${order.customer}</td>
                             <td>${utils.formatPrice(order.total)}</td>
-                            <td>
-                                <span class="dashboard-page__order-status" style="background:${statusColors[order.status] || '#64748b'}22;color:${statusColors[order.status] || '#64748b'};">
-                                    ${statusLabels[order.status] || order.status}
-                                </span>
-                            </td>
+                            <td><span class="dashboard-page__order-status" style="background:${statusColors[order.status] || '#64748b'}22;color:${statusColors[order.status] || '#64748b'};">${statusLabels[order.status] || order.status}</span></td>
                             <td>${order.date}</td>
                         </tr>
                     `).join('')}
@@ -599,45 +455,21 @@ class DashboardPage {
     }
 
     /*---------------------------------------------------------
-    متد _showLoading
-
-    وظیفه: نمایش وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
+    متدهای کمکی _showLoading, _hideLoading
 
     ---------------------------------------------------------*/
     _showLoading() {
         const stats = document.getElementById('dashboardStats');
         if (stats) {
-            stats.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:2rem 0;">
-                    <div class="spinner" style="margin:0 auto 1rem;"></div>
-                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
-                </div>
-            `;
+            stats.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem 0;"><div class="spinner" style="margin:0 auto 1rem;"></div><p>${translator.translate('loading') || 'در حال بارگذاری...'}</p></div>`;
         }
     }
-
-    /*---------------------------------------------------------
-    متد _hideLoading
-
-    وظیفه: مخفی کردن وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _hideLoading() {
-        // توسط _renderDashboard مدیریت می‌شود
-    }
+    _hideLoading() {}
 
     /*---------------------------------------------------------
     متد _refreshDashboard
 
-    وظیفه: بازخوانی داده‌های داشبورد
+    وظیفه: بازخوانی دستی داده‌ها
 
     ورودی‌ها: none
 
@@ -650,19 +482,12 @@ class DashboardPage {
             btn.disabled = true;
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translator.translate('refreshing') || 'در حال به‌روزرسانی...'}`;
         }
-
         try {
-            await this._loadData();
+            this._data = await Dashboard.refresh();
             this._renderDashboard();
-            utils.toast(
-                translator.translate('dashboardRefreshed') || 'داشبورد به‌روزرسانی شد.',
-                'success'
-            );
-        } catch (error) {
-            utils.toast(
-                translator.translate('refreshFailed') || 'به‌روزرسانی با شکست مواجه شد.',
-                'error'
-            );
+            utils.toast(translator.translate('dashboardRefreshed') || 'داشبورد به‌روزرسانی شد.', 'success');
+        } catch (e) {
+            utils.toast(translator.translate('refreshFailed') || 'به‌روزرسانی با شکست مواجه شد.', 'error');
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -674,7 +499,7 @@ class DashboardPage {
     /*---------------------------------------------------------
     متد _exportReport
 
-    وظیفه: خروجی گرفتن گزارش
+    وظیفه: خروجی گزارش
 
     ورودی‌ها: none
 
@@ -682,34 +507,17 @@ class DashboardPage {
 
     ---------------------------------------------------------*/
     _exportReport() {
-        if (!this._dashboardData) {
-            utils.toast(
-                translator.translate('noDataToExport') || 'داده‌ای برای خروجی وجود ندارد.',
-                'error'
-            );
+        if (!this._data) {
+            utils.toast(translator.translate('noDataToExport') || 'داده‌ای برای خروجی وجود ندارد.', 'error');
             return;
         }
-
         try {
-            const data = {
-                exportedAt: new Date().toISOString(),
-                user: Auth.getCurrentUser()?.username || 'کاربر',
-                dashboard: this._dashboardData,
-            };
-
+            const data = { exportedAt: new Date().toISOString(), user: Auth.getCurrentUser()?.username || 'کاربر', dashboard: this._data };
             const filename = `dashboard_report_${new Date().toISOString().slice(0,10)}.json`;
             utils.downloadJSON(data, filename);
-
-            utils.toast(
-                translator.translate('reportExported') || 'گزارش با موفقیت خروجی گرفته شد.',
-                'success'
-            );
-        } catch (error) {
-            console.error('❌ خطا در خروجی گزارش:', error);
-            utils.toast(
-                translator.translate('exportFailed') || 'خطا در خروجی گرفتن گزارش.',
-                'error'
-            );
+            utils.toast(translator.translate('reportExported') || 'گزارش با موفقیت خروجی گرفته شد.', 'success');
+        } catch (e) {
+            utils.toast(translator.translate('exportFailed') || 'خطا در خروجی گرفتن گزارش.', 'error');
         }
     }
 
@@ -726,25 +534,12 @@ class DashboardPage {
     _startAutoRefresh() {
         this._clearAutoRefresh();
         this._refreshInterval = setInterval(() => {
-            // فقط اگر صفحه قابل مشاهده باشد
             if (this._element && this._element.isConnected) {
-                this._loadData().then(() => {
-                    this._renderDashboard();
-                }).catch(() => {});
+                this._loadData().then(() => this._renderDashboard()).catch(() => {});
             }
         }, this._refreshIntervalTime);
     }
 
-    /*---------------------------------------------------------
-    متد _clearAutoRefresh
-
-    وظیفه: پاکسازی تایمر به‌روزرسانی خودکار
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
     _clearAutoRefresh() {
         if (this._refreshInterval) {
             clearInterval(this._refreshInterval);
@@ -755,7 +550,7 @@ class DashboardPage {
     /*---------------------------------------------------------
     متد _bindEvents
 
-    وظیفه: اتصال رویدادهای صفحه
+    وظیفه: اتصال رویدادها
 
     ورودی‌ها: none
 
@@ -763,23 +558,8 @@ class DashboardPage {
 
     ---------------------------------------------------------*/
     _bindEvents() {
-        // دکمه به‌روزرسانی
-        const refreshBtn = document.getElementById('dashboardRefreshBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-                this._refreshDashboard();
-            });
-        }
-
-        // دکمه خروجی گزارش
-        const exportBtn = document.getElementById('dashboardExportBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                this._exportReport();
-            });
-        }
-
-        // کلید F5 برای به‌روزرسانی (جلوگیری از بازloading صفحه)
+        document.getElementById('dashboardRefreshBtn')?.addEventListener('click', () => this._refreshDashboard());
+        document.getElementById('dashboardExportBtn')?.addEventListener('click', () => this._exportReport());
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F5' && this._element && this._element.isConnected) {
                 e.preventDefault();
@@ -803,34 +583,18 @@ class DashboardPage {
             this._language = lang || 'fa';
             this._updateLanguage();
         });
-
         document.addEventListener('langChanged', (e) => {
             this._language = e.detail.lang || 'fa';
             this._updateLanguage();
         });
-
-        // رویداد تغییر وضعیت احراز هویت
         document.addEventListener('authChanged', (e) => {
-            if (!e.detail.isAuthenticated) {
-                router.navigate('login');
-            }
+            if (!e.detail.isAuthenticated) router.navigate('login');
         });
     }
 
-    /*---------------------------------------------------------
-    متد _updateLanguage
-
-    وظیفه: به‌روزرسانی زبان
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
     _updateLanguage() {
         if (this._element && translator && translator.loaded) {
             translator.translateElement(this._element);
-            // بازرندر محتوای دینامیک
             this._renderDashboard();
         }
     }

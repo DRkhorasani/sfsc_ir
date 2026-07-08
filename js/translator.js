@@ -124,7 +124,7 @@ class Translator {
 
     ---------------------------------------------------------*/
     async _fetchTranslations(lang) {
-        const url = `lang/${lang}.json`;
+        const url = new URL(`../lang/${lang}.json`, import.meta.url).href;
 
         try {
             const response = await fetch(url);
@@ -141,8 +141,7 @@ class Translator {
 
             return data;
         } catch (error) {
-            // اگر فایل محلی موجود نبود، از داده‌های پیش‌فرض استفاده می‌شود
-            console.warn(`⚠️ فایل ترجمه "${url}" یافت نشد. استفاده از ترجمه‌های پیش‌فرض.`);
+            console.warn(`⚠️ فایل ترجمه "${url}" یافت نشد یا بارگذاری نشد.`, error);
             return this._getFallbackTranslations(lang);
         }
     }

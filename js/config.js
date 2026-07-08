@@ -143,15 +143,15 @@ export const Config = {
         THUMBNAIL_WIDTH: 400,
         THUMBNAIL_HEIGHT: 300,
         GALLERY_IMAGES: [
-            'pics/gallery01.jpg',
-            'pics/gallery02.jpg',
-            'pics/gallery03.jpg',
-            'pics/gallery04.jpg',
-            'pics/gallery05.jpg',
-            'pics/gallery06.jpg',
-            'pics/gallery07.jpg',
-            'pics/gallery08.jpg',
-            'pics/gallery09.jpg',
+            '/pics/gallery01.jpg',
+            '/pics/gallery02.jpg',
+            '/pics/gallery03.jpg',
+            '/pics/gallery04.jpg',
+            '/pics/gallery05.jpg',
+            '/pics/gallery06.jpg',
+            '/pics/gallery07.jpg',
+            '/pics/gallery08.jpg',
+            '/pics/gallery09.jpg',
         ],
         ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'],
         MAX_IMAGE_SIZE: 5 * 1024 * 1024, // ۵ مگابایت
@@ -261,6 +261,24 @@ export const Config = {
             xxl: 1400,
         },
         RTL_LANGUAGES: ['fa', 'ar', 'he', 'ur'],
+    },
+
+    /*---------------------------------------------------------
+    تنظیمات سرویس‌های خارجی (External APIs)
+    ---------------------------------------------------------*/
+    EXTERNAL_APIS: {
+        DEEPSEEK: {
+            ENABLED: false,
+            API_KEY: '', // بدون آن را در .env فایل قرار دهید
+            API_URL: 'https://api.deepseek.com/v1',
+            MODEL: 'deepseek-chat',
+            TIMEOUT: 60000, // میلی‌ثانیه
+            MAX_TOKENS: 2000,
+            TEMPERATURE: 0.7,
+            TOP_P: 0.9,
+            RETRY_COUNT: 3,
+            RETRY_DELAY: 1000,
+        },
     },
 
     /*---------------------------------------------------------
@@ -393,6 +411,8 @@ Object.freeze(Config.ANALYTICS);
 Object.freeze(Config.MOCK);
 Object.freeze(Config.CACHE);
 Object.freeze(Config.LOGGING);
+Object.freeze(Config.EXTERNAL_APIS);
+Object.freeze(Config.EXTERNAL_APIS.DEEPSEEK);
 Object.freeze(Config.THEME);
 Object.freeze(Config.THEME.COLORS);
 Object.freeze(Config.THEME.BREAKPOINTS);

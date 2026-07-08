@@ -11,20 +11,20 @@
 
 import { State } from './state.js';
 import { Router } from './router.js';
-import { Translator } from './translator.js';
+import { translator } from './translator.js';
 import { Storage } from './storage.js';
 import { Auth } from './auth.js';
-import { Modal } from './modal.js';
-import { Products } from './products.js';
-import { Services } from './services.js';
-import { News } from './news.js';
-import { FAQ } from './faq.js';
-import { Dashboard } from './dashboard.js';
-import { Cart } from './cart.js';
+import Modal from './modal.js';
+import ProductsPage from '../pages/products.js';
+import ServicesPage from '../pages/services.js';
+import NewsPage from '../pages/news.js';
+import FAQPage from '../pages/faq.js';
+import DashboardPage from '../pages/dashboard.js';
+import CartPage from '../pages/cart.js';
 import { validators } from './validators.js';
 import { utils } from './utils.js';
-import { Navbar } from '../components/navbar.js';
-import { Footer } from '../components/footer.js';
+import Navbar from '../components/navbar.js';
+import Footer from '../components/footer.js';
 
 /*---------------------------------------------------------
 کلاس App
@@ -62,7 +62,7 @@ class App {
             State.set('language', savedLang);
 
             // 2. مقداردهی Translator
-            this.modules.translator = new Translator();
+            this.modules.translator = translator;
             await this.modules.translator.init(savedLang);
 
             // 3. اعمال ترجمه اولیه
@@ -73,11 +73,11 @@ class App {
             this.modules.router.init();
 
             // 5. مقداردهی Auth
-            this.modules.auth = new Auth();
+            this.modules.auth = Auth;
             this.modules.auth.init();
 
-            // 6. مقداردهی Modal
-            this.modules.modal = new Modal();
+            // 6. مقداردهی Modal (Modal is a singleton instance)
+            this.modules.modal = Modal;
 
             // 7. مقداردهی کامپوننت‌ها
             this.modules.navbar = new Navbar();
@@ -87,22 +87,22 @@ class App {
             this.modules.footer.init();
 
             // 8. مقداردهی بخش‌های اصلی
-            this.modules.products = new Products();
+            this.modules.products = new ProductsPage();
             await this.modules.products.init();
 
-            this.modules.services = new Services();
+            this.modules.services = new ServicesPage();
             await this.modules.services.init();
 
-            this.modules.news = new News();
+            this.modules.news = new NewsPage();
             await this.modules.news.init();
 
-            this.modules.faq = new FAQ();
+            this.modules.faq = new FAQPage();
             await this.modules.faq.init();
 
-            this.modules.dashboard = new Dashboard();
+            this.modules.dashboard = new DashboardPage();
             await this.modules.dashboard.init();
 
-            this.modules.cart = new Cart();
+            this.modules.cart = new CartPage();
             await this.modules.cart.init();
 
             // 9. راه‌اندازی رویدادهای عمومی
@@ -146,11 +146,16 @@ class App {
             this.modules.translator.translatePage();
             // به‌روزرسانی جهت صفحه
             document.documentElement.dir = e.detail.lang === 'fa' ? 'rtl' : 'ltr';
-            // بازرندر بخش‌های دینامیک
-            this.modules.products.render();
-            this.modules.services.render();
-            this.modules.news.render();
-            this.modules.faq.render();
+
+            const refreshModule = (module) => {
+                if (!module || typeof module._updateLanguage !== 'function') return;
+                module._updateLanguage();
+            };
+
+            refreshModule(this.modules.products);
+            refreshModule(this.modules.services);
+            refreshModule(this.modules.news);
+            refreshModule(this.modules.faq);
         });
 
         // رویداد تغییر وضعیت احراز هویت

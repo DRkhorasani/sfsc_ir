@@ -1,8 +1,8 @@
 /*=========================================================
-نام فایل: news.js
+نام فایل: news.js (صفحه)
 
-وظیفه: صفحه اخبار با قابلیت نمایش لیست اخبار، جستجو،
-فیلتر بر اساس برچسب، صفحه‌بندی، مشاهده جزییات و اشتراک‌گذاری
+وظیفه: کنترلر صفحه اخبار – رندر UI، جستجو، فیلتر برچسب،
+صفحه‌بندی، نمایش جزییات و مدیریت رویدادها
 
 نویسنده: تیم توسعه سورنا فناور سینا
 
@@ -11,29 +11,19 @@
 
 import { State } from '../js/state.js';
 import { translator } from '../js/translator.js';
-import { api } from '../js/api.js';
-import { Modal } from '../js/modal.js';
+import { News } from '../js/news.js';
 import { utils } from '../js/utils.js';
+import { Modal } from '../js/modal.js';
 import { NewsCardList } from '../components/newsCard.js';
 import { Pagination } from '../components/pagination.js';
 
 /*---------------------------------------------------------
 کلاس NewsPage
 
-وظیفه: مدیریت و رندر صفحه اخبار
+وظیفه: مدیریت صفحه اخبار
 
 ---------------------------------------------------------*/
 class NewsPage {
-    /*---------------------------------------------------------
-    متد constructor
-
-    وظیفه: مقداردهی اولیه صفحه اخبار
-
-    ورودی‌ها: options (object)
-
-    خروجی: instance
-
-    ---------------------------------------------------------*/
     constructor(options = {}) {
         this.options = {
             container: '#news',
@@ -45,7 +35,7 @@ class NewsPage {
         this._newsList = null;
         this._pagination = null;
         this._newsItems = [];
-        this._filteredNews = [];
+        this._filteredItems = [];
         this._badges = [];
         this._currentPage = 1;
         this._itemsPerPage = 6;
@@ -58,7 +48,7 @@ class NewsPage {
     /*---------------------------------------------------------
     متد init
 
-    وظیفه: مقداردهی اولیه و رندر صفحه اخبار
+    وظیفه: مقداردهی اولیه و رندر صفحه
 
     ورودی‌ها: none
 
@@ -68,7 +58,6 @@ class NewsPage {
     async init() {
         if (this._initialized) return;
 
-        // دریافت المان اصلی
         this._element = document.querySelector(this.options.container);
         if (!this._element) {
             console.warn('⚠️ المان صفحه اخبار یافت نشد.');
@@ -84,6 +73,9 @@ class NewsPage {
         // مقداردهی کامپوننت‌ها
         this._initComponents();
 
+        // رندر اخبار
+        this._renderNews();
+
         // اتصال رویدادها
         this._bindEvents();
 
@@ -97,7 +89,7 @@ class NewsPage {
     /*---------------------------------------------------------
     متد _loadData
 
-    وظیفه: بارگذاری داده‌های اخبار از API
+    وظیفه: بارگذاری داده‌ها از سرویس
 
     ورودی‌ها: none
 
@@ -108,24 +100,14 @@ class NewsPage {
         try {
             this._isLoading = true;
             this._showLoading();
-
-            const response = await api.get('/news');
-            if (response?.success && response?.data) {
-                this._newsItems = response.data;
-                this._filteredNews = [...this._newsItems];
-
-                // استخراج برچسب‌ها
-                const badges = new Set();
-                this._newsItems.forEach(news => {
-                    if (news.badge) {
-                        badges.add(news.badge);
-                    }
-                });
-                this._badges = Array.from(badges);
-            }
-
+            this._newsItems = await News.getNews();
+            this._badges = await News.getBadges();
+            this._filteredItems = [...this._newsItems];
         } catch (error) {
             console.warn('⚠️ خطا در بارگذاری اخبار:', error);
+            this._newsItems = await News.getNews(); // داده‌های نمونه
+            this._badges = await News.getBadges();
+            this._filteredItems = [...this._newsItems];
             utils.toast(
                 translator.translate('loadNewsError') || 'خطا در بارگذاری اخبار.',
                 'error'
@@ -147,9 +129,7 @@ class NewsPage {
 
     ---------------------------------------------------------*/
     _buildPageStructure() {
-        if (this._element.querySelector('.news-page__wrapper')) {
-            return;
-        }
+        if (this._element.querySelector('.news-page__wrapper')) return;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'news-page__wrapper';
@@ -198,21 +178,28 @@ class NewsPage {
         paginationContainer.className = 'news-page__pagination';
         wrapper.appendChild(paginationContainer);
 
-        // افزودن به صفحه
+        // پیام خالی بودن
+        const emptyMsg = document.createElement('div');
+        emptyMsg.id = 'newsEmptyMessage';
+        emptyMsg.className = 'news-page__empty hidden';
+        emptyMsg.innerHTML = `
+            <i class="fas fa-newspaper" style="font-size:3rem;color:#94a3b8;display:block;margin-bottom:1rem;"></i>
+            <p data-i18n="noNewsFound">خبری یافت نشد.</p>
+        `;
+        wrapper.appendChild(emptyMsg);
+
         this._element.appendChild(wrapper);
 
         // ترجمه
         if (translator && translator.loaded) {
-            setTimeout(() => {
-                translator.translateElement(this._element);
-            }, 50);
+            setTimeout(() => translator.translateElement(this._element), 50);
         }
     }
 
     /*---------------------------------------------------------
     متد _initComponents
 
-    وظیفه: مقداردهی کامپوننت‌های صفحه
+    وظیفه: مقداردهی کامپوننت‌ها
 
     ورودی‌ها: none
 
@@ -220,7 +207,7 @@ class NewsPage {
 
     ---------------------------------------------------------*/
     _initComponents() {
-        // ---- لیست اخبار ----
+        // لیست اخبار
         const newsContainer = document.getElementById('newsContainer');
         if (newsContainer) {
             this._newsList = new NewsCardList(newsContainer, {
@@ -236,11 +223,11 @@ class NewsPage {
             this._newsList.init();
         }
 
-        // ---- صفحه‌بندی ----
+        // صفحه‌بندی
         const paginationContainer = document.getElementById('newsPagination');
         if (paginationContainer) {
             this._pagination = new Pagination({
-                totalItems: this._filteredNews.length,
+                totalItems: this._filteredItems.length,
                 itemsPerPage: this._itemsPerPage,
                 currentPage: this._currentPage,
                 visiblePages: 5,
@@ -263,9 +250,6 @@ class NewsPage {
 
         // پر کردن برچسب‌ها
         this._populateBadges();
-
-        // رندر اولیه اخبار
-        this._renderNews();
     }
 
     /*---------------------------------------------------------
@@ -297,7 +281,7 @@ class NewsPage {
     /*---------------------------------------------------------
     متد _renderNews
 
-    وظیفه: رندر اخبار بر اساس فیلترها و صفحه‌بندی
+    وظیفه: رندر اخبار با اعمال فیلترها و صفحه‌بندی
 
     ورودی‌ها: none
 
@@ -307,44 +291,44 @@ class NewsPage {
     _renderNews() {
         if (!this._newsList) return;
 
+        const emptyMessage = document.getElementById('newsEmptyMessage');
+        const countEl = document.getElementById('newsResultsCount');
+
         // اعمال فیلترها
         this._applyFilters();
 
-        // محاسبه offset و limit
-        const start = (this._currentPage - 1) * this._itemsPerPage;
-        const end = Math.min(start + this._itemsPerPage, this._filteredNews.length);
-        const pageItems = this._filteredNews.slice(start, end);
+        const totalItems = this._filteredItems.length;
+        const currentPage = Math.min(this._currentPage, Math.ceil(totalItems / this._itemsPerPage) || 1);
+        const start = (currentPage - 1) * this._itemsPerPage;
+        const end = Math.min(start + this._itemsPerPage, totalItems);
+        const pageItems = this._filteredItems.slice(start, end);
 
-        // به‌روزرسانی لیست اخبار
-        this._newsList.setNews(pageItems);
-
-        // به‌روزرسانی تعداد نتایج
-        const countEl = document.getElementById('newsResultsCount');
+        // به‌روزرسانی تعداد
         if (countEl) {
-            const total = this._filteredNews.length;
             const text = translator.translate('items') || 'خبر';
-            countEl.textContent = `${total} ${text}`;
+            countEl.textContent = `${totalItems} ${text}`;
         }
+
+        // اگر نتیجه‌ای وجود نداشت
+        if (totalItems === 0) {
+            this._newsList.setNews([]);
+            if (emptyMessage) emptyMessage.classList.remove('hidden');
+            if (this._pagination) {
+                this._pagination.setTotalItems(0);
+                this._pagination.render();
+            }
+            return;
+        }
+
+        if (emptyMessage) emptyMessage.classList.add('hidden');
+
+        // به‌روزرسانی لیست
+        this._newsList.setNews(pageItems);
 
         // به‌روزرسانی صفحه‌بندی
         if (this._pagination) {
-            this._pagination.setTotalItems(this._filteredNews.length);
-            this._pagination.goToPage(this._currentPage);
-        }
-
-        // اگر نتیجه‌ای وجود نداشت، پیام نمایش داده شود
-        if (this._filteredNews.length === 0) {
-            const container = document.getElementById('newsContainer');
-            if (container) {
-                const emptyMsg = document.createElement('p');
-                emptyMsg.className = 'text-center text-muted';
-                emptyMsg.textContent = translator.translate('noNewsFound') || 'خبری یافت نشد.';
-                emptyMsg.setAttribute('data-i18n', 'noNewsFound');
-                container.appendChild(emptyMsg);
-                if (translator && translator.loaded) {
-                    translator.translateElement(emptyMsg);
-                }
-            }
+            this._pagination.setTotalItems(totalItems);
+            this._pagination.goToPage(currentPage);
         }
     }
 
@@ -362,20 +346,19 @@ class NewsPage {
         let filtered = [...this._newsItems];
 
         // فیلتر جستجو
-        if (this._searchQuery) {
+        if (this._searchQuery && this._searchQuery.trim() !== '') {
             const query = this._searchQuery.toLowerCase().trim();
-            filtered = filtered.filter(news =>
-                news.title?.toLowerCase().includes(query) ||
-                news.description?.toLowerCase().includes(query) ||
-                news.badge?.toLowerCase().includes(query)
+            filtered = filtered.filter(item =>
+                item.title?.toLowerCase().includes(query) ||
+                item.description?.toLowerCase().includes(query) ||
+                item.content?.toLowerCase().includes(query) ||
+                item.badge?.toLowerCase().includes(query)
             );
         }
 
         // فیلتر برچسب
-        if (this._selectedBadge) {
-            filtered = filtered.filter(news =>
-                news.badge === this._selectedBadge
-            );
+        if (this._selectedBadge && this._selectedBadge.trim() !== '') {
+            filtered = filtered.filter(item => item.badge === this._selectedBadge);
         }
 
         // مرتب‌سازی بر اساس تاریخ (جدیدترین اول)
@@ -385,7 +368,7 @@ class NewsPage {
             return dateB - dateA;
         });
 
-        this._filteredNews = filtered;
+        this._filteredItems = filtered;
     }
 
     /*---------------------------------------------------------
@@ -399,13 +382,15 @@ class NewsPage {
 
     ---------------------------------------------------------*/
     _showNewsDetail(news) {
+        if (!news) return;
+
         const content = `
             <div class="news-detail">
                 ${news.image ? `<img src="${news.image}" alt="${news.title}" style="width:100%;border-radius:1rem;margin-bottom:1rem;max-height:400px;object-fit:cover;" />` : ''}
                 ${news.badge ? `<span style="display:inline-block;background:#2563eb;color:white;padding:0.25rem 1rem;border-radius:9999px;font-size:0.85rem;margin-bottom:0.75rem;">${news.badge}</span>` : ''}
                 <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;">${news.title}</h2>
                 ${news.date ? `<p style="color:#64748b;font-size:0.9rem;margin-bottom:1rem;"><i class="fas fa-calendar-alt"></i> ${utils.formatDate(news.date, this._language === 'fa' ? 'fa-IR' : 'en-US')}</p>` : ''}
-                <div style="color:#334155;line-height:1.8;white-space:pre-wrap;">${news.description || news.content || ''}</div>
+                <div style="color:#334155;line-height:1.8;white-space:pre-wrap;">${news.content || news.description || ''}</div>
                 <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;border-top:1px solid #e2e8f0;padding-top:1.5rem;">
                     ${news.link ? `<a href="${news.link}" target="_blank" rel="noopener noreferrer" class="btn btn--primary">
                         ${translator.translate('readFullNews') || 'مطالعه کامل خبر'} <i class="fas fa-external-link-alt"></i>
@@ -422,15 +407,15 @@ class NewsPage {
 
         // افزودن تابع اشتراک‌گذاری به window
         window.__SHARE_NEWS__ = (id) => {
-            const url = window.location.href;
+            const url = news.link || window.location.href;
             if (navigator.share) {
                 navigator.share({
                     title: news.title,
                     text: news.description,
-                    url: news.link || url,
+                    url: url,
                 }).catch(() => {});
             } else {
-                utils.copyToClipboard(news.link || url);
+                utils.copyToClipboard(url);
                 utils.toast(
                     translator.translate('linkCopied') || 'لینک کپی شد.',
                     'success'
@@ -441,18 +426,100 @@ class NewsPage {
         Modal.open(content, {
             maxWidth: '700px',
             className: 'news-detail-modal',
-            onOpen: () => {
-                // ترجمه محتوا
+            onOpen: (modal) => {
                 if (translator && translator.loaded) {
-                    setTimeout(() => {
-                        const modal = Modal.getLast();
-                        if (modal) {
-                            translator.translateElement(modal.element);
-                        }
-                    }, 50);
+                    setTimeout(() => translator.translateElement(modal.element), 50);
                 }
             },
         });
+    }
+
+    /*---------------------------------------------------------
+    متد _showLoading
+
+    وظیفه: نمایش وضعیت بارگذاری
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _showLoading() {
+        const container = document.getElementById('newsContainer');
+        if (container) {
+            container.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:3rem 0;">
+                    <div class="spinner" style="margin:0 auto 1rem;"></div>
+                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
+                </div>
+            `;
+        }
+    }
+
+    _hideLoading() {
+        // توسط _renderNews مدیریت می‌شود
+    }
+
+    /*---------------------------------------------------------
+    متد _handleSearch
+
+    وظیفه: مدیریت جستجوی اخبار
+
+    ورودی‌ها: query (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _handleSearch(query) {
+        this._searchQuery = query || '';
+        this._currentPage = 1;
+        this._renderNews();
+    }
+
+    /*---------------------------------------------------------
+    متد _handleBadgeFilter
+
+    وظیفه: مدیریت فیلتر برچسب
+
+    ورودی‌ها: badge (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _handleBadgeFilter(badge) {
+        this._selectedBadge = badge || '';
+        this._currentPage = 1;
+        this._renderNews();
+    }
+
+    /*---------------------------------------------------------
+    متد _refreshNews
+
+    وظیفه: بازخوانی اخبار از سرور
+
+    ورودی‌ها: none
+
+    خروجی: Promise<void>
+
+    ---------------------------------------------------------*/
+    async _refreshNews() {
+        try {
+            this._newsItems = await News.refresh();
+            this._badges = await News.getBadges();
+            this._filteredItems = [...this._newsItems];
+            this._currentPage = 1;
+            this._populateBadges();
+            this._renderNews();
+            utils.toast(
+                translator.translate('newsRefreshed') || 'اخبار به‌روزرسانی شدند.',
+                'success'
+            );
+        } catch (error) {
+            utils.toast(
+                translator.translate('refreshFailed') || 'به‌روزرسانی با شکست مواجه شد.',
+                'error'
+            );
+        }
     }
 
     /*---------------------------------------------------------
@@ -474,18 +541,14 @@ class NewsPage {
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(this._searchDebounceTimer);
                 this._searchDebounceTimer = setTimeout(() => {
-                    this._searchQuery = e.target.value;
-                    this._currentPage = 1;
-                    this._renderNews();
+                    this._handleSearch(e.target.value);
                 }, 300);
             });
 
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderNews();
+                    this._handleSearch(searchInput.value);
                 }
             });
         }
@@ -493,9 +556,7 @@ class NewsPage {
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
                 if (searchInput) {
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderNews();
+                    this._handleSearch(searchInput.value);
                 }
             });
         }
@@ -504,9 +565,7 @@ class NewsPage {
         const badgeFilter = document.getElementById('newsBadgeFilter');
         if (badgeFilter) {
             badgeFilter.addEventListener('change', (e) => {
-                this._selectedBadge = e.target.value;
-                this._currentPage = 1;
-                this._renderNews();
+                this._handleBadgeFilter(e.target.value);
             });
         }
     }
@@ -544,76 +603,11 @@ class NewsPage {
 
     ---------------------------------------------------------*/
     _updateLanguage() {
-        if (this._newsList) {
-            this._newsList._updateLanguage();
+        if (this._element && translator && translator.loaded) {
+            translator.translateElement(this._element);
+            // بازرندر اخبار
+            this._renderNews();
         }
-        if (this._pagination) {
-            this._pagination.setLanguage(this._language);
-        }
-        // به‌روزرسانی placeholder جستجو
-        const searchInput = document.getElementById('newsSearchInput');
-        if (searchInput) {
-            searchInput.placeholder = translator.translate('searchNews') || 'جستجوی اخبار...';
-        }
-        // به‌روزرسانی گزینه‌های فیلتر
-        this._populateBadges();
-        // به‌روزرسانی تعداد نتایج
-        this._renderNews();
-    }
-
-    /*---------------------------------------------------------
-    متد _showLoading
-
-    وظیفه: نمایش وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _showLoading() {
-        const container = document.getElementById('newsContainer');
-        if (container) {
-            container.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:3rem 0;">
-                    <div class="spinner" style="margin:0 auto 1rem;"></div>
-                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
-                </div>
-            `;
-        }
-    }
-
-    /*---------------------------------------------------------
-    متد _hideLoading
-
-    وظیفه: مخفی کردن وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _hideLoading() {
-        // توسط _renderNews مدیریت می‌شود
-    }
-
-    /*---------------------------------------------------------
-    متد refresh
-
-    وظیفه: بازخوانی کامل صفحه
-
-    ورودی‌ها: none
-
-    خروجی: Promise<void>
-
-    ---------------------------------------------------------*/
-    async refresh() {
-        this._searchQuery = '';
-        this._selectedBadge = '';
-        this._currentPage = 1;
-        await this._loadData();
-        this._populateBadges();
-        this._renderNews();
     }
 
     /*---------------------------------------------------------
@@ -636,6 +630,7 @@ class NewsPage {
             this._pagination = null;
         }
         clearTimeout(this._searchDebounceTimer);
+        window.__SHARE_NEWS__ = undefined;
         this._initialized = false;
         console.log('🧹 NewsPage پاکسازی شد.');
     }

@@ -652,3 +652,4 @@ class Validators {
 // ===== صادرات =====
 export { Validators };
 export default Validators;
+export const validators = Validators;

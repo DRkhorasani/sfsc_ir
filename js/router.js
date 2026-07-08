@@ -366,7 +366,39 @@ class Router {
 
     ---------------------------------------------------------*/
     _findRouteById(id) {
-        return this.routes[id] || null;
+        if (!id) return null;
+        const normalizedId = String(id).trim();
+        let route = Object.values(this.routes).find(route => route.id === normalizedId);
+        if (!route) {
+            route = Object.values(this.routes).find(route => route.component === normalizedId);
+        }
+        if (!route && normalizedId.startsWith('/')) {
+            route = this._findRouteByPath(normalizedId);
+        }
+        return route || null;
+    }
+
+    /*---------------------------------------------------------
+    متد _normalizePath
+
+    وظیفه: تبدیل آدرس‌ها به قالب مسیر داخلی
+
+    ورودی‌ها: path (string)
+
+    خروجی: string
+
+    ---------------------------------------------------------*/
+    _normalizePath(path) {
+        if (!path || typeof path !== 'string') return '/';
+        let cleanPath = path.replace(/\\/g, '/');
+        if (cleanPath.endsWith('/index.html')) {
+            return '/';
+        }
+        if (cleanPath.includes('/index.html')) {
+            cleanPath = cleanPath.substring(0, cleanPath.indexOf('/index.html')) || '/';
+        }
+        cleanPath = cleanPath.replace(/\/$/, '') || '/';
+        return cleanPath;
     }
 
     /*---------------------------------------------------------
@@ -380,8 +412,7 @@ class Router {
 
     ---------------------------------------------------------*/
     _findRouteByPath(path) {
-        // حذف trailing slash
-        const cleanPath = path.replace(/\/$/, '') || '/';
+        const cleanPath = this._normalizePath(path);
         return this.routes[cleanPath] || null;
     }
 

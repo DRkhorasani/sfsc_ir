@@ -1,8 +1,8 @@
 /*=========================================================
-نام فایل: products.js
+نام فایل: products.js (صفحه)
 
-وظیفه: صفحه محصولات با قابلیت نمایش لیست محصولات، جستجو،
-فیلتر بر اساس دسته‌بندی، صفحه‌بندی، مشاهده جزییات و افزودن به سبد خرید
+وظیفه: کنترلر صفحه محصولات – رندر UI، جستجو، فیلتر دسته‌بندی،
+مرتب‌سازی، صفحه‌بندی، نمایش جزییات و مدیریت رویدادها
 
 نویسنده: تیم توسعه سورنا فناور سینا
 
@@ -11,29 +11,19 @@
 
 import { State } from '../js/state.js';
 import { translator } from '../js/translator.js';
-import { api } from '../js/api.js';
-import { Modal } from '../js/modal.js';
+import { Products } from '../js/products.js';
 import { utils } from '../js/utils.js';
+import { Modal } from '../js/modal.js';
 import { ProductCardList } from '../components/productCard.js';
 import { Pagination } from '../components/pagination.js';
 
 /*---------------------------------------------------------
 کلاس ProductsPage
 
-وظیفه: مدیریت و رندر صفحه محصولات
+وظیفه: مدیریت صفحه محصولات
 
 ---------------------------------------------------------*/
 class ProductsPage {
-    /*---------------------------------------------------------
-    متد constructor
-
-    وظیفه: مقداردهی اولیه صفحه محصولات
-
-    ورودی‌ها: options (object)
-
-    خروجی: instance
-
-    ---------------------------------------------------------*/
     constructor(options = {}) {
         this.options = {
             container: '#products',
@@ -51,6 +41,7 @@ class ProductsPage {
         this._itemsPerPage = 12;
         this._searchQuery = '';
         this._selectedCategory = '';
+        this._sortType = 'default';
         this._isLoading = false;
         this._searchDebounceTimer = null;
     }
@@ -58,7 +49,7 @@ class ProductsPage {
     /*---------------------------------------------------------
     متد init
 
-    وظیفه: مقداردهی اولیه و رندر صفحه محصولات
+    وظیفه: مقداردهی اولیه و رندر صفحه
 
     ورودی‌ها: none
 
@@ -68,7 +59,6 @@ class ProductsPage {
     async init() {
         if (this._initialized) return;
 
-        // دریافت المان اصلی
         this._element = document.querySelector(this.options.container);
         if (!this._element) {
             console.warn('⚠️ المان صفحه محصولات یافت نشد.');
@@ -84,6 +74,9 @@ class ProductsPage {
         // مقداردهی کامپوننت‌ها
         this._initComponents();
 
+        // رندر محصولات
+        this._renderProducts();
+
         // اتصال رویدادها
         this._bindEvents();
 
@@ -97,7 +90,7 @@ class ProductsPage {
     /*---------------------------------------------------------
     متد _loadData
 
-    وظیفه: بارگذاری داده‌های محصولات از API
+    وظیفه: بارگذاری داده‌ها از سرویس
 
     ورودی‌ها: none
 
@@ -108,22 +101,14 @@ class ProductsPage {
         try {
             this._isLoading = true;
             this._showLoading();
-
-            // بارگذاری محصولات
-            const productsResponse = await api.get('/products');
-            if (productsResponse?.success && productsResponse?.data) {
-                this._products = productsResponse.data;
-                this._filteredProducts = [...this._products];
-            }
-
-            // بارگذاری دسته‌بندی‌ها
-            const categoriesResponse = await api.get('/products/categories');
-            if (categoriesResponse?.success && categoriesResponse?.data) {
-                this._categories = categoriesResponse.data;
-            }
-
+            this._products = await Products.getProducts();
+            this._categories = await Products.getCategories();
+            this._filteredProducts = [...this._products];
         } catch (error) {
             console.warn('⚠️ خطا در بارگذاری محصولات:', error);
+            this._products = await Products.getProducts(); // داده‌های نمونه
+            this._categories = await Products.getCategories();
+            this._filteredProducts = [...this._products];
             utils.toast(
                 translator.translate('loadProductsError') || 'خطا در بارگذاری محصولات.',
                 'error'
@@ -145,10 +130,7 @@ class ProductsPage {
 
     ---------------------------------------------------------*/
     _buildPageStructure() {
-        // اگر ساختار از قبل وجود دارد، نیازی به ایجاد مجدد نیست
-        if (this._element.querySelector('.products-page__wrapper')) {
-            return;
-        }
+        if (this._element.querySelector('.products-page__wrapper')) return;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'products-page__wrapper';
@@ -162,7 +144,7 @@ class ProductsPage {
         `;
         wrapper.appendChild(header);
 
-        // نوار ابزار (جستجو و فیلتر)
+        // نوار ابزار (جستجو، فیلتر، مرتب‌سازی)
         const toolbar = document.createElement('div');
         toolbar.className = 'products-page__toolbar';
         toolbar.innerHTML = `
@@ -204,21 +186,28 @@ class ProductsPage {
         paginationContainer.className = 'products-page__pagination';
         wrapper.appendChild(paginationContainer);
 
-        // افزودن به صفحه
+        // پیام خالی بودن
+        const emptyMsg = document.createElement('div');
+        emptyMsg.id = 'productsEmptyMessage';
+        emptyMsg.className = 'products-page__empty hidden';
+        emptyMsg.innerHTML = `
+            <i class="fas fa-box-open" style="font-size:3rem;color:#94a3b8;display:block;margin-bottom:1rem;"></i>
+            <p data-i18n="noProductsFound">محصولی یافت نشد.</p>
+        `;
+        wrapper.appendChild(emptyMsg);
+
         this._element.appendChild(wrapper);
 
         // ترجمه
         if (translator && translator.loaded) {
-            setTimeout(() => {
-                translator.translateElement(this._element);
-            }, 50);
+            setTimeout(() => translator.translateElement(this._element), 50);
         }
     }
 
     /*---------------------------------------------------------
     متد _initComponents
 
-    وظیفه: مقداردهی کامپوننت‌های صفحه
+    وظیفه: مقداردهی کامپوننت‌ها
 
     ورودی‌ها: none
 
@@ -226,7 +215,7 @@ class ProductsPage {
 
     ---------------------------------------------------------*/
     _initComponents() {
-        // ---- لیست محصولات ----
+        // لیست محصولات
         const productsContainer = document.getElementById('productsContainer');
         if (productsContainer) {
             this._productList = new ProductCardList(productsContainer, {
@@ -249,7 +238,7 @@ class ProductsPage {
             this._productList.init();
         }
 
-        // ---- صفحه‌بندی ----
+        // صفحه‌بندی
         const paginationContainer = document.getElementById('productsPagination');
         if (paginationContainer) {
             this._pagination = new Pagination({
@@ -276,9 +265,6 @@ class ProductsPage {
 
         // پر کردن دسته‌بندی‌ها
         this._populateCategories();
-
-        // رندر اولیه محصولات
-        this._renderProducts();
     }
 
     /*---------------------------------------------------------
@@ -295,7 +281,6 @@ class ProductsPage {
         const select = document.getElementById('productCategoryFilter');
         if (!select) return;
 
-        // حذف گزینه‌های قبلی به جز گزینه اول
         while (select.options.length > 1) {
             select.remove(1);
         }
@@ -311,7 +296,7 @@ class ProductsPage {
     /*---------------------------------------------------------
     متد _renderProducts
 
-    وظیفه: رندر محصولات بر اساس فیلترها و صفحه‌بندی
+    وظیفه: رندر محصولات با اعمال فیلترها و صفحه‌بندی
 
     ورودی‌ها: none
 
@@ -321,44 +306,44 @@ class ProductsPage {
     _renderProducts() {
         if (!this._productList) return;
 
+        const emptyMessage = document.getElementById('productsEmptyMessage');
+        const countEl = document.getElementById('productResultsCount');
+
         // اعمال فیلترها
         this._applyFilters();
 
-        // محاسبه offset و limit
-        const start = (this._currentPage - 1) * this._itemsPerPage;
-        const end = Math.min(start + this._itemsPerPage, this._filteredProducts.length);
+        const totalItems = this._filteredProducts.length;
+        const currentPage = Math.min(this._currentPage, Math.ceil(totalItems / this._itemsPerPage) || 1);
+        const start = (currentPage - 1) * this._itemsPerPage;
+        const end = Math.min(start + this._itemsPerPage, totalItems);
         const pageItems = this._filteredProducts.slice(start, end);
 
-        // به‌روزرسانی لیست محصولات
-        this._productList.setProducts(pageItems);
-
-        // به‌روزرسانی تعداد نتایج
-        const countEl = document.getElementById('productResultsCount');
+        // به‌روزرسانی تعداد
         if (countEl) {
-            const total = this._filteredProducts.length;
             const text = translator.translate('items') || 'محصول';
-            countEl.textContent = `${total} ${text}`;
+            countEl.textContent = `${totalItems} ${text}`;
         }
+
+        // اگر نتیجه‌ای وجود نداشت
+        if (totalItems === 0) {
+            this._productList.setProducts([]);
+            if (emptyMessage) emptyMessage.classList.remove('hidden');
+            if (this._pagination) {
+                this._pagination.setTotalItems(0);
+                this._pagination.render();
+            }
+            return;
+        }
+
+        if (emptyMessage) emptyMessage.classList.add('hidden');
+
+        // به‌روزرسانی لیست
+        this._productList.setProducts(pageItems);
 
         // به‌روزرسانی صفحه‌بندی
         if (this._pagination) {
-            this._pagination.setTotalItems(this._filteredProducts.length);
-            this._pagination.goToPage(this._currentPage);
-        }
-
-        // اگر نتیجه‌ای وجود نداشت، پیام نمایش داده شود
-        if (this._filteredProducts.length === 0) {
-            const container = document.getElementById('productsContainer');
-            if (container) {
-                const emptyMsg = document.createElement('p');
-                emptyMsg.className = 'text-center text-muted';
-                emptyMsg.textContent = translator.translate('noProductsFound') || 'محصولی یافت نشد.';
-                emptyMsg.setAttribute('data-i18n', 'noProductsFound');
-                container.appendChild(emptyMsg);
-                if (translator && translator.loaded) {
-                    translator.translateElement(emptyMsg);
-                }
-            }
+            this._pagination.setTotalItems(totalItems);
+            this._pagination.goToPage(currentPage);
         }
     }
 
@@ -376,50 +361,164 @@ class ProductsPage {
         let filtered = [...this._products];
 
         // فیلتر جستجو
-        if (this._searchQuery) {
+        if (this._searchQuery && this._searchQuery.trim() !== '') {
             const query = this._searchQuery.toLowerCase().trim();
-            filtered = filtered.filter(product =>
-                product.title?.toLowerCase().includes(query) ||
-                product.description?.toLowerCase().includes(query) ||
-                product.category?.toLowerCase().includes(query)
+            filtered = filtered.filter(item =>
+                item.title?.toLowerCase().includes(query) ||
+                item.description?.toLowerCase().includes(query) ||
+                item.category?.toLowerCase().includes(query)
             );
         }
 
         // فیلتر دسته‌بندی
-        if (this._selectedCategory) {
-            filtered = filtered.filter(product =>
-                product.category === this._selectedCategory
-            );
+        if (this._selectedCategory && this._selectedCategory.trim() !== '') {
+            filtered = filtered.filter(item => item.category === this._selectedCategory);
         }
 
         // مرتب‌سازی
-        const sort = document.getElementById('productSortFilter')?.value || 'default';
-        switch (sort) {
-            case 'price_asc':
-                filtered.sort((a, b) => {
-                    const priceA = parseInt(String(a.price).replace(/[^0-9]/g, '')) || 0;
-                    const priceB = parseInt(String(b.price).replace(/[^0-9]/g, '')) || 0;
-                    return priceA - priceB;
-                });
-                break;
-            case 'price_desc':
-                filtered.sort((a, b) => {
-                    const priceA = parseInt(String(a.price).replace(/[^0-9]/g, '')) || 0;
-                    const priceB = parseInt(String(b.price).replace(/[^0-9]/g, '')) || 0;
-                    return priceB - priceA;
-                });
-                break;
-            case 'name_asc':
-                filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-                break;
-            case 'name_desc':
-                filtered.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
-                break;
-            default:
-                break;
+        if (this._sortType && this._sortType !== 'default') {
+            switch (this._sortType) {
+                case 'price_asc':
+                    filtered.sort((a, b) => this._parsePrice(a.price) - this._parsePrice(b.price));
+                    break;
+                case 'price_desc':
+                    filtered.sort((a, b) => this._parsePrice(b.price) - this._parsePrice(a.price));
+                    break;
+                case 'name_asc':
+                    filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+                    break;
+                case 'name_desc':
+                    filtered.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+                    break;
+                default:
+                    break;
+            }
         }
 
         this._filteredProducts = filtered;
+    }
+
+    /*---------------------------------------------------------
+    متد _parsePrice
+
+    وظیفه: تبدیل قیمت به عدد
+
+    ورودی‌ها: price (string|number)
+
+    خروجی: number
+
+    ---------------------------------------------------------*/
+    _parsePrice(price) {
+        if (typeof price === 'number') return price;
+        if (typeof price === 'string') {
+            const num = parseInt(price.replace(/[^0-9]/g, ''), 10);
+            return isNaN(num) ? 0 : num;
+        }
+        return 0;
+    }
+
+    /*---------------------------------------------------------
+    متد _showLoading
+
+    وظیفه: نمایش وضعیت بارگذاری
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _showLoading() {
+        const container = document.getElementById('productsContainer');
+        if (container) {
+            container.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:3rem 0;">
+                    <div class="spinner" style="margin:0 auto 1rem;"></div>
+                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
+                </div>
+            `;
+        }
+    }
+
+    _hideLoading() {
+        // توسط _renderProducts مدیریت می‌شود
+    }
+
+    /*---------------------------------------------------------
+    متد _handleSearch
+
+    وظیفه: مدیریت جستجوی محصولات
+
+    ورودی‌ها: query (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _handleSearch(query) {
+        this._searchQuery = query || '';
+        this._currentPage = 1;
+        this._renderProducts();
+    }
+
+    /*---------------------------------------------------------
+    متد _handleCategoryFilter
+
+    وظیفه: مدیریت فیلتر دسته‌بندی
+
+    ورودی‌ها: category (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _handleCategoryFilter(category) {
+        this._selectedCategory = category || '';
+        this._currentPage = 1;
+        this._renderProducts();
+    }
+
+    /*---------------------------------------------------------
+    متد _handleSort
+
+    وظیفه: مدیریت مرتب‌سازی
+
+    ورودی‌ها: sortType (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _handleSort(sortType) {
+        this._sortType = sortType || 'default';
+        this._currentPage = 1;
+        this._renderProducts();
+    }
+
+    /*---------------------------------------------------------
+    متد _refreshProducts
+
+    وظیفه: بازخوانی محصولات از سرور
+
+    ورودی‌ها: none
+
+    خروجی: Promise<void>
+
+    ---------------------------------------------------------*/
+    async _refreshProducts() {
+        try {
+            this._products = await Products.refresh();
+            this._categories = await Products.getCategories();
+            this._filteredProducts = [...this._products];
+            this._currentPage = 1;
+            this._populateCategories();
+            this._renderProducts();
+            utils.toast(
+                translator.translate('productsRefreshed') || 'محصولات به‌روزرسانی شدند.',
+                'success'
+            );
+        } catch (error) {
+            utils.toast(
+                translator.translate('refreshFailed') || 'به‌روزرسانی با شکست مواجه شد.',
+                'error'
+            );
+        }
     }
 
     /*---------------------------------------------------------
@@ -441,18 +540,14 @@ class ProductsPage {
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(this._searchDebounceTimer);
                 this._searchDebounceTimer = setTimeout(() => {
-                    this._searchQuery = e.target.value;
-                    this._currentPage = 1;
-                    this._renderProducts();
+                    this._handleSearch(e.target.value);
                 }, 300);
             });
 
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderProducts();
+                    this._handleSearch(searchInput.value);
                 }
             });
         }
@@ -460,9 +555,7 @@ class ProductsPage {
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
                 if (searchInput) {
-                    this._searchQuery = searchInput.value;
-                    this._currentPage = 1;
-                    this._renderProducts();
+                    this._handleSearch(searchInput.value);
                 }
             });
         }
@@ -471,18 +564,15 @@ class ProductsPage {
         const categoryFilter = document.getElementById('productCategoryFilter');
         if (categoryFilter) {
             categoryFilter.addEventListener('change', (e) => {
-                this._selectedCategory = e.target.value;
-                this._currentPage = 1;
-                this._renderProducts();
+                this._handleCategoryFilter(e.target.value);
             });
         }
 
         // مرتب‌سازی
         const sortFilter = document.getElementById('productSortFilter');
         if (sortFilter) {
-            sortFilter.addEventListener('change', () => {
-                this._currentPage = 1;
-                this._renderProducts();
+            sortFilter.addEventListener('change', (e) => {
+                this._handleSort(e.target.value);
             });
         }
     }
@@ -520,80 +610,11 @@ class ProductsPage {
 
     ---------------------------------------------------------*/
     _updateLanguage() {
-        if (this._productList) {
-            this._productList._updateLanguage();
+        if (this._element && translator && translator.loaded) {
+            translator.translateElement(this._element);
+            // بازرندر محصولات
+            this._renderProducts();
         }
-        if (this._pagination) {
-            this._pagination.setLanguage(this._language);
-        }
-        // به‌روزرسانی placeholder جستجو
-        const searchInput = document.getElementById('productSearchInput');
-        if (searchInput) {
-            const placeholder = translator.translate('searchProducts') || 'جستجوی محصولات...';
-            searchInput.placeholder = placeholder;
-        }
-        // به‌روزرسانی گزینه‌های فیلتر
-        const categoryFilter = document.getElementById('productCategoryFilter');
-        if (categoryFilter && categoryFilter.options[0]) {
-            categoryFilter.options[0].textContent = translator.translate('allCategories') || 'همه دسته‌بندی‌ها';
-        }
-        // به‌روزرسانی تعداد نتایج
-        this._renderProducts();
-    }
-
-    /*---------------------------------------------------------
-    متد _showLoading
-
-    وظیفه: نمایش وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _showLoading() {
-        const container = document.getElementById('productsContainer');
-        if (container) {
-            container.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:3rem 0;">
-                    <div class="spinner" style="margin:0 auto 1rem;"></div>
-                    <p>${translator.translate('loading') || 'در حال بارگذاری...'}</p>
-                </div>
-            `;
-        }
-    }
-
-    /*---------------------------------------------------------
-    متد _hideLoading
-
-    وظیفه: مخفی کردن وضعیت بارگذاری
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
-    _hideLoading() {
-        // توسط _renderProducts مدیریت می‌شود
-    }
-
-    /*---------------------------------------------------------
-    متد refresh
-
-    وظیفه: بازخوانی کامل صفحه
-
-    ورودی‌ها: none
-
-    خروجی: Promise<void>
-
-    ---------------------------------------------------------*/
-    async refresh() {
-        this._searchQuery = '';
-        this._selectedCategory = '';
-        this._currentPage = 1;
-        await this._loadData();
-        this._populateCategories();
-        this._renderProducts();
     }
 
     /*---------------------------------------------------------

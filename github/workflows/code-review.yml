@@ -28,4 +28,4 @@ jobs:
         uses: hustcer/deepseek-review@v1
         with:
           # کلید API که به عنوان Secret در مخزن ذخیره کرده‌اید
-          chat-token: ${{ secrets.CHAT_TOKEN }}
+          chat-token: ${{ secrets.DEEPSEEK_API_KEY }}

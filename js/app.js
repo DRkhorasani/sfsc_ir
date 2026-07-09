@@ -32,10 +32,6 @@ import Footer from '../components/footer.js';
 وظیفه: مدیریت چرخه حیات برنامه، مقداردهی اولیه ماژول‌ها،
 اتصال رویدادها و هماهنگی بین کامپوننت‌ها
 
-ورودی‌ها: none
-
-خروجی: نمونه‌ای از کلاس App
-
 ---------------------------------------------------------*/
 class App {
     constructor() {
@@ -68,15 +64,15 @@ class App {
             // 3. اعمال ترجمه اولیه
             this.modules.translator.translatePage();
 
-            // 4. مقداردهی Router
-            this.modules.router = new Router();
-            this.modules.router.init();
-
-            // 5. مقداردهی Auth
+            // 4. مقداردهی Auth (قبل از Router)
             this.modules.auth = Auth;
             this.modules.auth.init();
 
-            // 6. مقداردهی Modal (Modal is a singleton instance)
+            // 5. مقداردهی Router (بعد از Auth)
+            this.modules.router = new Router();
+            this.modules.router.init();
+
+            // 6. مقداردهی Modal
             this.modules.modal = Modal;
 
             // 7. مقداردهی کامپوننت‌ها
@@ -86,39 +82,35 @@ class App {
             this.modules.footer = new Footer();
             this.modules.footer.init();
 
-            // 8. مقداردهی بخش‌های اصلی
-            this.modules.products = new ProductsPage();
-            await this.modules.products.init();
-
-            this.modules.services = new ServicesPage();
-            await this.modules.services.init();
-
-            this.modules.news = new NewsPage();
-            await this.modules.news.init();
-
-            this.modules.faq = new FAQPage();
-            await this.modules.faq.init();
-
-            this.modules.dashboard = new DashboardPage();
-            await this.modules.dashboard.init();
-
-            this.modules.cart = new CartPage();
-            await this.modules.cart.init();
+            // 8. مقداردهی بخش‌های اصلی (با بررسی مسیر فعلی)
+            await this._initPages();
 
             // 9. راه‌اندازی رویدادهای عمومی
             this._bindGlobalEvents();
 
-            // 10. شمارنده‌های آماری
+            // 10. راه‌اندازی رویدادهای احراز هویت
+            this._bindAuthEvents();
+
+            // 11. تعریف توابع سراسری برای سازگاری با onclick
+            this._defineGlobalFunctions();
+
+            // 12. شمارنده‌های آماری
             this._initCounters();
 
-            // 11. افکت Reveal
+            // 13. افکت Reveal
             this._initReveal();
 
-            // 12. پارالاکس
+            // 14. پارالاکس
             this._initParallax();
 
-            // 13. بارگذاری وضعیت کاربر از LocalStorage
+            // 15. بارگذاری وضعیت کاربر از LocalStorage
             this._loadUserState();
+
+            // 16. حذف هش از URL و اسکرول به بالای صفحه
+            if (window.location.hash) {
+                history.replaceState(null, '', window.location.pathname);
+            }
+            window.scrollTo(0, 0);
 
             this.initialized = true;
             console.log('✅ برنامه با موفقیت مقداردهی شد.');
@@ -126,6 +118,51 @@ class App {
         } catch (error) {
             console.error('❌ خطا در مقداردهی برنامه:', error);
         }
+    }
+
+    /*---------------------------------------------------------
+    متد _initPages
+
+    وظیفه: مقداردهی صفحات بر اساس مسیر فعلی
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _initPages() {
+        const currentRoute = this.modules.router.getCurrentRoute();
+        const currentPageId = currentRoute?.id || 'home';
+
+        // مقداردهی صفحات عمومی (همیشه نیاز نیست)
+        this.modules.products = new ProductsPage();
+        this.modules.services = new ServicesPage();
+        this.modules.news = new NewsPage();
+        this.modules.faq = new FAQPage();
+
+        // مقداردهی صفحات عمومی بدون شرط (چون نیازی به احراز هویت ندارند)
+        await this.modules.products.init();
+        await this.modules.services.init();
+        await this.modules.news.init();
+        await this.modules.faq.init();
+
+        // مقداردهی صفحات نیازمند احراز هویت فقط در صورت نیاز
+        if (currentPageId === 'dashboard') {
+            this.modules.dashboard = new DashboardPage();
+            await this.modules.dashboard.init();
+        } else {
+            // یک نمونه خالی برای جلوگیری از خطا
+            this.modules.dashboard = { init: () => {} };
+        }
+
+        if (currentPageId === 'cart') {
+            this.modules.cart = new CartPage();
+            await this.modules.cart.init();
+        } else {
+            this.modules.cart = { init: () => {} };
+        }
+
+        console.log(`✅ صفحات مقداردهی شدند (صفحه فعلی: ${currentPageId})`);
     }
 
     /*---------------------------------------------------------
@@ -144,7 +181,6 @@ class App {
             State.set('language', e.detail.lang);
             this.modules.translator.setLanguage(e.detail.lang);
             this.modules.translator.translatePage();
-            // به‌روزرسانی جهت صفحه
             document.documentElement.dir = e.detail.lang === 'fa' ? 'rtl' : 'ltr';
 
             const refreshModule = (module) => {
@@ -169,6 +205,28 @@ class App {
         document.addEventListener('cartUpdated', (e) => {
             State.set('cart', e.detail.cart);
             this.modules.navbar.updateCartCount(e.detail.cart.length);
+        });
+
+        // ===== باز کردن تصاویر گالری و گواهی‌ها در مودال =====
+        document.addEventListener('click', (e) => {
+            const img = e.target.closest('.gallery__img, .brand__gallery-img');
+            if (img && img.tagName === 'IMG') {
+                const src = img.getAttribute('src');
+                if (src) {
+                    e.preventDefault();
+                    this.modules.modal.open(
+                        `<div style="text-align:center;padding:0.5rem;">
+                            <img src="${src}" style="max-width:100%;max-height:80vh;border-radius:1rem;box-shadow:0 10px 30px rgba(0,0,0,0.3);" alt="تصویر گالری" />
+                        </div>`,
+                        {
+                            maxWidth: '90vw',
+                            className: 'gallery-modal',
+                            closeOnOverlay: true,
+                            closeOnEscape: true,
+                        }
+                    );
+                }
+            }
         });
 
         // Event Delegation برای دکمه‌های عمومی
@@ -219,7 +277,6 @@ class App {
                     document.dispatchEvent(new CustomEvent('langChanged', {
                         detail: { lang }
                     }));
-                    // به‌روزرسانی کلاس فعال
                     document.querySelectorAll('.lang-btn').forEach(btn => {
                         btn.classList.toggle('lang-btn--active', btn.dataset.lang === lang);
                     });
@@ -247,7 +304,6 @@ class App {
                     return;
                 }
 
-                // شبیه‌سازی ارسال
                 utils.toast('درخواست شما با موفقیت ثبت شد.', 'success');
                 contactForm.reset();
             });
@@ -269,7 +325,7 @@ class App {
             });
         }
 
-        // رویداد تغییر تم (در صورت نیاز)
+        // رویداد تغییر تم
         const themeToggle = document.querySelector('[data-action="theme-toggle"]');
         if (themeToggle) {
             themeToggle.addEventListener('click', () => {
@@ -283,15 +339,438 @@ class App {
     }
 
     /*---------------------------------------------------------
-    متد _initCounters
+    متد _bindAuthEvents
 
-    وظیفه: راه‌اندازی شمارنده‌های آماری با افکت شمارش
+    وظیفه: اتصال رویدادهای مربوط به احراز هویت (ثبت‌نام، ورود، پروفایل)
 
     ورودی‌ها: none
 
     خروجی: void
 
     ---------------------------------------------------------*/
+    _bindAuthEvents() {
+        // ===== دکمه ثبت نام =====
+        const registerBtn = document.getElementById('authRegisterPrimary');
+        if (registerBtn) {
+            registerBtn.addEventListener('click', () => {
+                this._handleRegister();
+            });
+        }
+
+        // ===== دکمه ورود =====
+        const loginBtn = document.getElementById('authLoginPrimary');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                this._handleLogin();
+            });
+        }
+
+        // ===== دکمه خروج =====
+        const logoutBtn = document.getElementById('authLogoutButton');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this._handleLogout();
+            });
+        }
+
+        // ===== دکمه تغییر رمز عبور =====
+        const changePasswordBtn = document.getElementById('authSavePasswordButton');
+        if (changePasswordBtn) {
+            changePasswordBtn.addEventListener('click', () => {
+                this._handleChangePassword();
+            });
+        }
+
+        // ===== دکمه تایید OTP در ثبت نام =====
+        const otpBtn = document.getElementById('authRegisterOtpButton');
+        if (otpBtn) {
+            otpBtn.addEventListener('click', () => {
+                this._handleRegisterOtp();
+            });
+        }
+
+        // ===== دکمه تایید OTP در ورود =====
+        const loginOtpVerifyBtn = document.getElementById('authLoginVerifyButton');
+        if (loginOtpVerifyBtn) {
+            loginOtpVerifyBtn.addEventListener('click', () => {
+                this._handleLoginOtpVerify();
+            });
+        }
+
+        // ===== تب‌های ثبت نام، ورود و پروفایل =====
+        const tabs = document.querySelectorAll('.auth__tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const panel = tab.dataset.panel;
+                if (panel) {
+                    this._switchAuthPanel(panel);
+                }
+            });
+        });
+
+        // ===== لینک "قبلاً حساب دارم" =====
+        const altRegister = document.getElementById('authRegisterAlt');
+        if (altRegister) {
+            altRegister.addEventListener('click', () => {
+                this._switchAuthPanel('login');
+            });
+        }
+
+        // ===== لینک "ثبت نام جدید" =====
+        const altLogin = document.getElementById('authLoginAlt');
+        if (altLogin) {
+            altLogin.addEventListener('click', () => {
+                this._switchAuthPanel('register');
+            });
+        }
+    }
+
+    /*---------------------------------------------------------
+    متدهای مدیریت احراز هویت
+    ---------------------------------------------------------*/
+
+    /*---------------------------------------------------------
+    _switchAuthPanel
+
+    وظیفه: تغییر پنل احراز هویت (ثبت نام، ورود، پروفایل)
+
+    ورودی‌ها: panel (string)
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _switchAuthPanel(panel) {
+        const registerPanel = document.getElementById('registerPanel');
+        const loginPanel = document.getElementById('loginPanel');
+        const profilePanel = document.getElementById('profilePanel');
+        const tabs = document.querySelectorAll('.auth__tab');
+
+        // مخفی کردن همه پنل‌ها
+        if (registerPanel) registerPanel.classList.add('hidden');
+        if (loginPanel) loginPanel.classList.add('hidden');
+        if (profilePanel) profilePanel.classList.add('hidden');
+
+        // نمایش پنل انتخاب شده
+        if (panel === 'register' && registerPanel) {
+            registerPanel.classList.remove('hidden');
+        } else if (panel === 'login' && loginPanel) {
+            loginPanel.classList.remove('hidden');
+        } else if (panel === 'profile' && profilePanel) {
+            profilePanel.classList.remove('hidden');
+            // بارگذاری اطلاعات پروفایل
+            this._loadProfile();
+        }
+
+        // به‌روزرسانی کلاس فعال تب‌ها
+        tabs.forEach(tab => {
+            tab.classList.toggle('auth__tab--active', tab.dataset.panel === panel);
+        });
+    }
+
+    /*---------------------------------------------------------
+    _handleRegister
+
+    وظیفه: مدیریت ثبت نام کاربر
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _handleRegister() {
+        const username = document.getElementById('regUsername')?.value?.trim();
+        const mobile = document.getElementById('regMobile')?.value?.trim();
+        const email = document.getElementById('regEmail')?.value?.trim();
+        const password = document.getElementById('regPassword')?.value;
+        const confirmPassword = document.getElementById('regConfirmPassword')?.value;
+
+        if (!username || !mobile || !email || !password || !confirmPassword) {
+            utils.toast('لطفاً تمام فیلدها را پر کنید.', 'error');
+            return;
+        }
+
+        try {
+            const result = await Auth.register({
+                username,
+                mobile,
+                email,
+                password,
+                confirmPassword,
+            });
+
+            if (result.success) {
+                utils.toast(result.message, 'success');
+                // نمایش بخش OTP
+                const otpWrapper = document.getElementById('regOtpWrapper');
+                if (otpWrapper) otpWrapper.classList.remove('hidden');
+            } else {
+                utils.toast(result.message || 'خطا در ثبت نام', 'error');
+            }
+        } catch (error) {
+            utils.toast(error.message || 'خطا در ثبت نام', 'error');
+        }
+    }
+
+    /*---------------------------------------------------------
+    _handleRegisterOtp
+
+    وظیفه: تایید OTP ثبت نام
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _handleRegisterOtp() {
+        const otp = document.getElementById('regOtp')?.value?.trim();
+        const mobile = document.getElementById('regMobile')?.value?.trim();
+
+        if (!otp) {
+            utils.toast('لطفاً کد تایید را وارد کنید.', 'error');
+            return;
+        }
+
+        try {
+            const result = await Auth.verifyOTP(mobile, otp, 'register');
+            if (result.success) {
+                utils.toast(result.message || 'ثبت نام با موفقیت تکمیل شد.', 'success');
+                // هدایت به صفحه ورود یا پروفایل
+                setTimeout(() => {
+                    this._switchAuthPanel('login');
+                }, 1000);
+            } else {
+                utils.toast(result.message || 'کد تایید نامعتبر است.', 'error');
+            }
+        } catch (error) {
+            utils.toast(error.message || 'خطا در تایید کد', 'error');
+        }
+    }
+
+    /*---------------------------------------------------------
+    _handleLogin
+
+    وظیفه: مدیریت ورود کاربر
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _handleLogin() {
+        const method = document.getElementById('loginMethod')?.value || 'password';
+        const mobile = document.getElementById('loginMobile')?.value?.trim();
+
+        if (!mobile) {
+            utils.toast('لطفاً شماره موبایل را وارد کنید.', 'error');
+            return;
+        }
+
+        if (method === 'password') {
+            const password = document.getElementById('loginPassword')?.value;
+            if (!password) {
+                utils.toast('لطفاً رمز عبور را وارد کنید.', 'error');
+                return;
+            }
+            try {
+                const result = await Auth.login({ mobile, password });
+                if (result.success) {
+                    utils.toast(result.message, 'success');
+                    // به‌روزرسانی UI
+                    this._switchAuthPanel('profile');
+                } else {
+                    utils.toast(result.message || 'خطا در ورود', 'error');
+                }
+            } catch (error) {
+                utils.toast(error.message || 'خطا در ورود', 'error');
+            }
+        } else {
+            // روش OTP
+            try {
+                const result = await Auth.sendOTP(mobile, 'login');
+                if (result.success) {
+                    utils.toast(result.message, 'success');
+                    // نمایش بخش OTP
+                    const otpWrapper = document.getElementById('otpLoginWrapper');
+                    if (otpWrapper) otpWrapper.classList.remove('hidden');
+                } else {
+                    utils.toast(result.message || 'خطا در ارسال کد', 'error');
+                }
+            } catch (error) {
+                utils.toast(error.message || 'خطا در ارسال کد', 'error');
+            }
+        }
+    }
+
+    /*---------------------------------------------------------
+    _handleLoginOtpVerify
+
+    وظیفه: تایید OTP ورود
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _handleLoginOtpVerify() {
+        const otp = document.getElementById('loginOtp')?.value?.trim();
+        const mobile = document.getElementById('loginMobile')?.value?.trim();
+
+        if (!otp) {
+            utils.toast('لطفاً کد OTP را وارد کنید.', 'error');
+            return;
+        }
+
+        try {
+            const result = await Auth.verifyOTP(mobile, otp, 'login');
+            if (result.success) {
+                utils.toast(result.message || 'ورود با موفقیت انجام شد.', 'success');
+                this._switchAuthPanel('profile');
+            } else {
+                utils.toast(result.message || 'کد نامعتبر است.', 'error');
+            }
+        } catch (error) {
+            utils.toast(error.message || 'خطا در تایید کد', 'error');
+        }
+    }
+
+    /*---------------------------------------------------------
+    _handleLogout
+
+    وظیفه: خروج از حساب کاربری
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _handleLogout() {
+        try {
+            await Auth.logout();
+            utils.toast('با موفقیت خارج شدید.', 'success');
+            this._switchAuthPanel('login');
+            // به‌روزرسانی نوار ناوبری
+            this.modules.navbar.updateAuthState(null);
+        } catch (error) {
+            utils.toast(error.message || 'خطا در خروج', 'error');
+        }
+    }
+
+    /*---------------------------------------------------------
+    _handleChangePassword
+
+    وظیفه: تغییر رمز عبور
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _handleChangePassword() {
+        const currentPassword = document.getElementById('profileCurrentPassword')?.value;
+        const newPassword = document.getElementById('profileNewPassword')?.value;
+
+        if (!currentPassword || !newPassword) {
+            utils.toast('لطفاً هر دو فیلد را پر کنید.', 'error');
+            return;
+        }
+
+        try {
+            const result = await Auth.changePassword(currentPassword, newPassword);
+            if (result.success) {
+                utils.toast(result.message, 'success');
+                document.getElementById('profileCurrentPassword').value = '';
+                document.getElementById('profileNewPassword').value = '';
+            } else {
+                utils.toast(result.message || 'خطا در تغییر رمز', 'error');
+            }
+        } catch (error) {
+            utils.toast(error.message || 'خطا در تغییر رمز', 'error');
+        }
+    }
+
+    /*---------------------------------------------------------
+    _loadProfile
+
+    وظیفه: بارگذاری اطلاعات پروفایل کاربر
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    async _loadProfile() {
+        const user = Auth.getCurrentUser();
+        if (user) {
+            document.getElementById('profileUsername').textContent = user.username || '-';
+            document.getElementById('profileMobile').textContent = user.mobile || '-';
+            document.getElementById('profileEmail').textContent = user.email || '-';
+        } else {
+            // تلاش برای دریافت از سرور
+            try {
+                const result = await Auth.getProfile();
+                if (result.success) {
+                    const data = result.data?.user || result.data;
+                    document.getElementById('profileUsername').textContent = data.username || '-';
+                    document.getElementById('profileMobile').textContent = data.mobile || '-';
+                    document.getElementById('profileEmail').textContent = data.email || '-';
+                }
+            } catch (error) {
+                console.warn('⚠️ خطا در بارگذاری پروفایل:', error);
+            }
+        }
+    }
+
+    /*---------------------------------------------------------
+    _defineGlobalFunctions
+
+    وظیفه: تعریف توابع سراسری برای سازگاری با onclick در HTML
+
+    ورودی‌ها: none
+
+    خروجی: void
+
+    ---------------------------------------------------------*/
+    _defineGlobalFunctions() {
+        // تعریف تابع switchAuthPanel در سطح global
+        window.switchAuthPanel = (panel) => {
+            this._switchAuthPanel(panel);
+        };
+
+        // تعریف تابع handleRegister در سطح global
+        window.handleRegister = () => {
+            this._handleRegister();
+        };
+
+        // تعریف تابع handleLogin در سطح global
+        window.handleLogin = () => {
+            this._handleLogin();
+        };
+
+        // تعریف تابع handleLogout در سطح global
+        window.handleLogout = () => {
+            this._handleLogout();
+        };
+
+        // تعریف تابع handleChangePassword در سطح global
+        window.handleChangePassword = () => {
+            this._handleChangePassword();
+        };
+
+        // تعریف تابع handleRegisterOtp در سطح global
+        window.handleRegisterOtp = () => {
+            this._handleRegisterOtp();
+        };
+
+        // تعریف تابع handleLoginOtpVerify در سطح global
+        window.handleLoginOtpVerify = () => {
+            this._handleLoginOtpVerify();
+        };
+    }
+
+    /*---------------------------------------------------------
+    متدهای کمکی (شمارنده، Reveal، پارالاکس، ...)
+    ---------------------------------------------------------*/
+
     _initCounters() {
         const counters = document.querySelectorAll('.stats__number[data-target]');
         const observer = new IntersectionObserver((entries) => {
@@ -325,16 +804,6 @@ class App {
         counters.forEach(c => observer.observe(c));
     }
 
-    /*---------------------------------------------------------
-    متد _initReveal
-
-    وظیفه: راه‌اندازی افکت نمایش تدریجی المان‌ها
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
     _initReveal() {
         const elements = document.querySelectorAll('.reveal');
         const observer = new IntersectionObserver((entries) => {
@@ -348,16 +817,6 @@ class App {
         elements.forEach(el => observer.observe(el));
     }
 
-    /*---------------------------------------------------------
-    متد _initParallax
-
-    وظیفه: راه‌اندازی افکت پارالاکس برای المان‌های دارای data-parallax
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
     _initParallax() {
         const items = document.querySelectorAll('[data-parallax]');
         if (items.length === 0) return;
@@ -371,7 +830,6 @@ class App {
             });
         };
 
-        // استفاده از requestAnimationFrame برای بهبود عملکرد
         let ticking = false;
         window.addEventListener('scroll', () => {
             if (!ticking) {
@@ -384,16 +842,6 @@ class App {
         });
     }
 
-    /*---------------------------------------------------------
-    متد _loadUserState
-
-    وظیفه: بارگذاری وضعیت کاربر از LocalStorage
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
     _loadUserState() {
         const user = Storage.get('user', null);
         if (user) {
@@ -404,57 +852,27 @@ class App {
         }
     }
 
-    /*---------------------------------------------------------
-    متد _updateAuthPanels
-
-    وظیفه: به‌روزرسانی وضعیت پنل‌های احراز هویت بر اساس کاربر
-
-    ورودی‌ها: user (object|null)
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
     _updateAuthPanels(user) {
-        // این متد توسط کامپوننت Auth مدیریت می‌شود
-        // اما برای هماهنگی، رویداد را مجدداً ارسال می‌کنیم
-        const authModule = this.modules.auth;
-        if (authModule) {
-            authModule.updateUI(user);
-        }
+        // به‌روزرسانی نوار ناوبری و سایر بخش‌ها
     }
 
-    /*---------------------------------------------------------
-    متد destroy
-
-    وظیفه: پاکسازی منابع و رویدادها (در صورت نیاز)
-
-    ورودی‌ها: none
-
-    خروجی: void
-
-    ---------------------------------------------------------*/
     destroy() {
-        // پاکسازی observerها و event listenerها در صورت نیاز
         this.initialized = false;
         console.log('🧹 برنامه پاکسازی شد.');
     }
 }
 
-// ===== مقداردهی اولیه برنامه پس از بارگذاری کامل DOM =====
+// ===== مقداردهی اولیه برنامه =====
 document.addEventListener('DOMContentLoaded', () => {
     const app = new App();
     app.init();
-
-    // ذخیره نمونه برنامه در window برای دسترسی در کنسول (debug)
     window.__APP__ = app;
 });
 
-// ===== مدیریت خطاهای کلی =====
 window.addEventListener('error', (e) => {
     console.error('❌ خطای全局:', e.message, e.filename, e.lineno);
 });
 
-// ===== مدیریت promise rejection =====
 window.addEventListener('unhandledrejection', (e) => {
     console.error('❌ خطای Promise مدیریت نشده:', e.reason);
 });

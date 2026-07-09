@@ -2,7 +2,7 @@
 نام فایل: services.js (صفحه)
 
 وظیفه: کنترلر صفحه خدمات – رندر UI، جستجو، فیلتر بر اساس نوع،
-صفحه‌بندی، درخواست خدمت و مدیریت رویدادها
+صفحه‌بندی، درخواست خدمت (با نمایش فرم مودال) و مدیریت رویدادها
 
 نویسنده: تیم توسعه سورنا فناور سینا
 
@@ -214,8 +214,8 @@ class ServicesPage {
                 showIcon: true,
                 showDescription: true,
                 showRequestButton: true,
-                onRequest: (service, formData) => {
-                    this._handleServiceRequest(service, formData);
+                onRequest: (service) => {
+                    this._showServiceRequestForm(service);
                 },
             });
             this._serviceList.init();
@@ -370,32 +370,124 @@ class ServicesPage {
     }
 
     /*---------------------------------------------------------
-    متد _handleServiceRequest
+    متد _showServiceRequestForm
 
-    وظیفه: مدیریت درخواست خدمت از طریق سرویس
+    وظیفه: نمایش فرم درخواست خدمت در مودال و ثبت درخواست
 
-    ورودی‌ها: service (object), formData (object)
+    ورودی‌ها: service (object)
 
-    خروجی: Promise<void>
+    خروجی: void
 
     ---------------------------------------------------------*/
-    async _handleServiceRequest(service, formData) {
-        if (!service || !formData) return;
+    _showServiceRequestForm(service) {
+        if (!service) return;
 
-        try {
-            const result = await Services.requestService(service.id, formData);
-            if (result.success) {
-                utils.toast(
-                    result.message || translator.translate('serviceRequestSubmitted') || 'درخواست خدمت با موفقیت ثبت شد.',
-                    'success'
-                );
-            }
-        } catch (error) {
-            utils.toast(
-                error.message || translator.translate('serviceRequestError') || 'خطا در ثبت درخواست خدمت.',
-                'error'
-            );
-        }
+        const content = `
+            <div class="service-request-modal">
+                <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1rem;">
+                    ${translator.translate('requestServiceTitle') || 'درخواست خدمت:'} ${service.title || ''}
+                </h3>
+                <form id="serviceRequestForm">
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;font-weight:600;margin-bottom:0.25rem;">${translator.translate('fullName') || 'نام کامل'}</label>
+                        <input type="text" id="servName" class="auth__input" 
+                               placeholder="${translator.translate('fullName') || 'نام کامل'}" 
+                               data-placeholder="fullName" required />
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;font-weight:600;margin-bottom:0.25rem;">${translator.translate('phoneNumber') || 'شماره تماس'}</label>
+                        <input type="tel" id="servPhone" class="auth__input" 
+                               placeholder="${translator.translate('phoneNumber') || 'شماره تماس'}" 
+                               data-placeholder="phoneNumber" required />
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;font-weight:600;margin-bottom:0.25rem;">ایمیل</label>
+                        <input type="email" id="servEmail" class="auth__input" 
+                               placeholder="example@mail.com" required />
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;font-weight:600;margin-bottom:0.25rem;">${translator.translate('requestDescription') || 'توضیحات درخواست'}</label>
+                        <textarea id="servDesc" rows="4" class="auth__input" 
+                                  placeholder="${translator.translate('requestDescription') || 'توضیحات درخواست'}" 
+                                  data-placeholder="requestDescription" required></textarea>
+                    </div>
+                    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                        <button type="submit" class="btn btn--primary" style="flex:1;">
+                            ${translator.translate('submitRequest') || 'ارسال درخواست'}
+                        </button>
+                        <button type="button" class="btn btn--outline" data-modal-close>
+                            ${translator.translate('cancel') || 'انصراف'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        // باز کردن مودال با غیرفعال کردن بسته شدن با کلیک روی overlay
+        const modalId = Modal.open(content, {
+            maxWidth: '500px',
+            className: 'service-request-modal',
+            closeOnOverlay: false, // جلوگیری از بسته شدن با کلیک خارج از مودال
+            closeOnEscape: true,   // اما با کلید Escape بسته شود
+            onOpen: (modal) => {
+                const form = modal.element.querySelector('#serviceRequestForm');
+                if (form) {
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const name = document.getElementById('servName')?.value?.trim();
+                        const phone = document.getElementById('servPhone')?.value?.trim();
+                        const email = document.getElementById('servEmail')?.value?.trim();
+                        const desc = document.getElementById('servDesc')?.value?.trim();
+
+                        if (!name || !phone || !email || !desc) {
+                            utils.toast(
+                                translator.translate('fillRequiredFields') || 'لطفاً تمام فیلدهای ضروری را پر کنید.',
+                                'error'
+                            );
+                            return;
+                        }
+
+                        // بستن مودال
+                        Modal.close(modal.id);
+
+                        // ارسال درخواست به سرور
+                        try {
+                            const result = await Services.requestService(service.id, {
+                                name,
+                                phone,
+                                email,
+                                description: desc,
+                            });
+                            if (result.success) {
+                                utils.toast(
+                                    result.message || translator.translate('serviceRequestSubmitted') || 'درخواست خدمت با موفقیت ثبت شد.',
+                                    'success'
+                                );
+                            }
+                        } catch (error) {
+                            utils.toast(
+                                error.message || translator.translate('serviceRequestError') || 'خطا در ثبت درخواست خدمت.',
+                                'error'
+                            );
+                        }
+                    });
+                }
+
+                const closeBtn = modal.element.querySelector('[data-modal-close]');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        Modal.close(modal.id);
+                    });
+                }
+
+                // ترجمه محتوای مودال
+                if (translator && translator.loaded) {
+                    setTimeout(() => {
+                        translator.translateElement(modal.element);
+                    }, 50);
+                }
+            },
+        });
     }
 
     /*---------------------------------------------------------

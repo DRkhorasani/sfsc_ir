@@ -56,6 +56,11 @@ class DashboardPage {
             console.warn('⚠️ المان صفحه داشبورد یافت نشد.');
             return;
         }
+        
+    const currentRoute = router.getCurrentRoute();
+    if (currentRoute?.id !== 'dashboard') {
+         return;
+}
 
         // بررسی احراز هویت
         if (!Auth.isAuthenticated()) {

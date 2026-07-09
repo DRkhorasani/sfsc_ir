@@ -14,6 +14,7 @@ import { Config } from './config.js';
 import { State } from './state.js';
 import { Storage } from './storage.js';
 import { utils } from './utils.js';
+import './toast.js'; // فقط برای اجرای کد مقداردهی
 
 /*---------------------------------------------------------
 کلاس ApiClient

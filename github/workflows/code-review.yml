@@ -1,0 +1,31 @@
+# نام گردش کار که در گیت‌هاب نمایش داده می‌شود
+name: Code Review with DeepSeek
+
+# رویدادهایی که باعث اجرای این گردش کار می‌شوند
+on:
+  pull_request_target:
+    types:
+      - opened       # وقتی یک PR جدید ایجاد می‌شود
+      - reopened     # وقتی یک PR دوباره باز می‌شود
+      - synchronize  # وقتی کامیت جدیدی به PR اضافه می‌شود
+
+# سطح دسترسی‌های مورد نیاز برای افزودن نظر به PR
+permissions:
+  pull-requests: write
+
+# تعریف کارهایی که باید اجرا شوند
+jobs:
+  # نام این کار (می‌تواند دلخواه باشد)
+  deepseek-review:
+    # نوع ماشین مجازی که کار روی آن اجرا می‌شود
+    runs-on: ubuntu-latest
+    # نام این کار که در گزارش‌ها نمایش داده می‌شود
+    name: DeepSeek Code Review
+    # مراحل تشکیل‌دهنده این کار
+    steps:
+      - name: DeepSeek Code Review
+        # استفاده از یک Action آماده برای بررسی کد با DeepSeek
+        uses: hustcer/deepseek-review@v1
+        with:
+          # کلید API که به عنوان Secret در مخزن ذخیره کرده‌اید
+          chat-token: ${{ secrets.DEEPSEEK_API_KEY }}

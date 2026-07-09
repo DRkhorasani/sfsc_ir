@@ -1,0 +1,104 @@
+[
+  {
+    "id": 1,
+    "title": "دستگاه نمونه‌گیر خودکار آلاینده‌های بیولوژیک هوا",
+    "description": "دستگاه حجمی ۷ روزه با قابلیت پایش مداوم اسپور قارچ و گرده گیاهان، مجهز به کنترل جریان هوا، نمایشگر LCD و اتصال به سامانه ابری. شکست انحصار Burkard.",
+    "price": "۷۲۰ میلیون تومان",
+    "images": [
+      "https://drkhorasani.github.io/sfsc_ir/images/Sp01.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sp02.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sp03.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sp04.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sp05.jpg"
+    ],
+    "features": [
+      "پایش ۷ روزه",
+      "اتصال ابری",
+      "دقت حجمی بالا",
+      "قابل استفاده در ایستگاه‌های پایش"
+    ],
+    "category": "sampler",
+    "badge": "محصول برتر"
+  },
+  {
+    "id": 2,
+    "title": "نمونه‌گیر هوای اماکن (Indoor Air Sampler)",
+    "description": "مناسب بیمارستان‌ها، مدارس، صنایع غذایی و دفاتر. جمع‌آوری ذرات آلرژن و قارچ با کارتریج Air-O-Cell.",
+    "price": "۳۹۰ میلیون تومان",
+    "images": [
+      "https://picsum.photos/id/20/400/300",
+      "https://picsum.photos/id/21/400/300",
+      "https://picsum.photos/id/22/400/300",
+      "https://picsum.photos/id/23/400/300",
+      "https://picsum.photos/id/24/400/300"
+    ],
+    "features": [
+      "سبک و پرتابل",
+      "نمونه‌گیری سریع",
+      "قابل استفاده با کارتریج استاندارد"
+    ],
+    "category": "sampler",
+    "badge": "پرفروش"
+  },
+  {
+    "id": 3,
+    "title": "دستگاه اسپورتراپ دیجیتال (Spore Trap Pro)",
+    "description": "نمونه‌گیر دوکاره با قابلیت تنظیم دوره نمونه‌گیری ۱ تا ۱۴ روز، دارای حافظه داخلی و خروجی USB.",
+    "price": "۵۹۰ میلیون تومان",
+    "images": [
+      "https://drkhorasani.github.io/sfsc_ir/images/mic01.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/mic02.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/mic03.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/mic04.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/mic05.jpg"
+    ],
+    "features": [
+      "تنظیم بازه زمانی",
+      "حافظه ۱۰۰ نمونه",
+      "باطری اضطراری"
+    ],
+    "category": "spore_trap",
+    "detailTitle": "تصاویر میکروسپی از دانه‌های گرده و اسپور قارچ‌ها"
+  },
+  {
+    "id": 4,
+    "title": "دستگاه پایش هوای آلرژن مدل SFS-5000",
+    "description": "پیشرفته‌ترین نمونه‌گیر هوای دیجیتال با نمایشگر لمسی، قابلیت کالیبراسیون خودکار و اتصال به اینترنت.",
+    "price": "۸۲۰ میلیون تومان",
+    "images": [
+      "https://drkhorasani.github.io/sfsc_ir/images/Sam01.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sam02.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sam03.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sam04.jpg",
+      "https://drkhorasani.github.io/sfsc_ir/images/Sam04.png"
+    ],
+    "features": [
+      "اتصال اینترنت",
+      "گارانتی ۳ ساله",
+      "نمایشگر لمسی",
+      "خروجی آنلاین"
+    ],
+    "category": "digital",
+    "detailTitle": "اجزای دستگاه"
+  },
+  {
+    "id": 5,
+    "title": "تله حجمی اسپور ۷ روزه (مدل SFS-7000)",
+    "description": "نسخه حرفه‌ای مشابه Burkard با قابلیت آنالیز آنلاین و سامانه هشدار. ساخت ایران.",
+    "price": "۷۵۰ میلیون تومان",
+    "images": [
+      "https://picsum.photos/id/11/400/300",
+      "https://picsum.photos/id/12/400/300",
+      "https://picsum.photos/id/13/400/300",
+      "https://picsum.photos/id/14/400/300",
+      "https://picsum.photos/id/15/400/300"
+    ],
+    "features": [
+      "پایش ۷ روزه",
+      "داده آنلاین",
+      "نرم‌افزار اختصاصی",
+      "هشدار آلودگی"
+    ],
+    "category": "volumetric"
+  }
+]

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title data-i18n="pageTitle">سورنا فناور سینا | سامانه پایش آلرژن و اسپور قارچ</title>
+    <meta name="description"
+        content="طراحی و ساخت دستگاه‌های جمع‌آوری گرده، اسپور قارچ و آلرژن‌های هوا، خدمات نمونه‌گیری، تحلیل و تفسیر نتایج" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+    <link rel="stylesheet" href="css/animation.css" />
+    <link rel="stylesheet" href="css/theme.css" />
+</head>
+
+<body>
+
+    <!-- ===== HEADER / NAVBAR ===== -->
+    <header id="navbar" class="navbar">
+        <div class="container navbar__inner">
+            <div class="navbar__brand">
+                <img src="https://drkhorasani.github.io/sfsc_ir/images/logo.jpg" class="navbar__logo" alt="لوگوی سورنا فناور سینا" />
+                <div>
+                    <h1 class="navbar__title">سورنا فناور سینا</h1>
+                    <p class="navbar__subtitle" data-i18n="subtitleText">Aerobiology &amp; Air Monitoring</p>
+                </div>
+            </div>
+
+            <nav class="navbar__nav" id="navbarNav">
+                <a href="#home" data-i18n="navHome">خانه</a>
+                <a href="#products" data-i18n="navProducts">محصولات</a>
+                <a href="#brand" data-i18n="navBrand">درباره ما</a>
+                <a href="#services" data-i18n="navServices">خدمات</a>
+                <a href="#dashboard" data-i18n="navDashboard">پایش آنلاین</a>
+                <a href="#news" data-i18n="navNews">اخبار</a>
+                <a href="#gallery" data-i18n="navGallery">گالری</a>
+                <a href="#faq" data-i18n="navFaq">سوالات متداول</a>
+                <a href="#auth" data-i18n="navAuth">ورود / ثبت نام</a>
+                <a href="#contact" data-i18n="navContact">تماس</a>
+            </nav>
+
+            <div class="navbar__actions">
+                <div class="navbar__lang">
+                    <button class="lang-btn lang-btn--active" data-lang="fa">فا</button>
+                    <button class="lang-btn" data-lang="en">EN</button>
+                </div>
+                <button class="btn btn--primary btn--sm" data-i18n="consultBtn" id="consultBtn">درخواست مشاوره</button>
+                <button class="btn btn--dark btn--sm" data-i18n="authBtn" id="authBtnNav">ورود / ثبت نام</button>
+                <button class="navbar__hamburger" id="mobileMenuBtn" aria-label="منو">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="navbar__mobile" id="mobileMenu">
+            <a href="#home" data-i18n="navHome">خانه</a>
+            <a href="#products" data-i18n="navProducts">محصولات</a>
+            <a href="#brand" data-i18n="navBrand">درباره ما</a>
+            <a href="#services" data-i18n="navServices">خدمات</a>
+            <a href="#dashboard" data-i18n="navDashboard">پایش آنلاین</a>
+            <a href="#news" data-i18n="navNews">اخبار</a>
+            <a href="#gallery" data-i18n="navGallery">گالری</a>
+            <a href="#faq" data-i18n="navFaq">سوالات متداول</a>
+            <a href="#auth" data-i18n="navAuth">ورود / ثبت نام</a>
+            <a href="#contact" data-i18n="navContact">تماس</a>
+        </div>
+    </header>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main>
+
+        <!-- ===== HERO SECTION ===== -->
+        <section id="home" class="hero">
+            <div class="hero__overlay"></div>
+            <div class="container hero__container">
+                <div class="hero__grid">
+                    <!-- Hero Image -->
+                    <div class="hero__image-wrapper">
+                        <img src="https://drkhorasani.github.io/sfsc_ir/images/00.jpg" alt="محصول اصلی شرکت" class="hero__image" />
+                        <div class="hero__image-caption">
+                            <p class="hero__image-badge" data-i18n="heroBadge">نوآوری در پایش زیست‌محیطی</p>
+                            <h3 class="hero__image-title" data-i18n="heroImageTitle">دستگاه پیشرفته پایش آلرژن</h3>
+                            <p class="hero__image-desc" data-i18n="heroImageDesc">راهکار جامع اندازه‌گیری اسپور قارچ،
+                                گرده و آلرژن‌های هوایی با دقت بالا و اتصال ابری.</p>
+                        </div>
+                    </div>
+
+                    <!-- Hero Content -->
+                    <div class="hero__content">
+                        <div class="hero__badge" data-i18n="heroBadge">نوآوری در پایش زیست‌محیطی</div>
+                        <h2 class="hero__title" data-i18n="heroTitle">سامانه هوشمند پایش <span
+                                class="text-gradient">اسپور قارچ و آلرژن هوا</span></h2>
+                        <p class="hero__desc" data-i18n="heroDesc">طراحی و ساخت تجهیزات پیشرفته نمونه‌گیری گرده، اسپور
+                            قارچ، آلرژن‌های معلق و پایش کیفیت هوا برای بیمارستان‌ها، آزمایشگاه‌ها، مراکز تحقیقاتی و
+                            کشاورزی دقیق.</p>
+                        <div class="hero__buttons">
+                            <a href="#products" class="btn btn--primary" data-i18n="heroBtn1">مشاهده محصولات</a>
+                            <a href="#services" class="btn btn--outline-light" data-i18n="heroBtn2">خدمات تخصصی</a>
+                        </div>
+                        <div class="hero__stats">
+                            <div class="hero__stat">
+                                <h4 data-i18n="heroStat1Title">پایش ۲۴/۷</h4>
+                                <p data-i18n="heroStat1Desc">کنترل هوشمند جریان هوا و ارسال داده به صورت لحظه‌ای.</p>
+                            </div>
+                            <div class="hero__stat">
+                                <h4 data-i18n="heroStat2Title">پلتفرم ابری</h4>
+                                <p data-i18n="heroStat2Desc">دسترسی امن به گزارش‌ها و نمودارهای تحلیلی در هر زمان.</p>
+                            </div>
+                            <div class="hero__stat">
+                                <h4 data-i18n="heroStat3Title">گارانتی فناوری</h4>
+                                <p data-i18n="heroStat3Desc">توسعه داخلی با ثبت اختراع و پشتیبانی فنی شرکتی.</p>
+                            </div>
+                        </div>
+                        <div class="hero__brand">
+                            <img src="https://drkhorasani.github.io/sfsc_ir/images/logo.jpg" alt="لوگوی شرکت" class="hero__brand-logo" />
+                            <div>
+                                <p class="hero__brand-note" data-i18n="heroLogoNote">لوگوی برند</p>
+                                <h4 class="hero__brand-name" data-i18n="heroLogoHeading">سورنا فناور سینا</h4>
+                                <p class="hero__brand-desc" data-i18n="heroLogoDesc">هویت بصری شرکت در مقیاس بین‌المللی.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== BRAND / ABOUT ===== -->
+        <section id="brand" class="section section--light reveal">
+            <div class="container">
+                <div class="brand__grid">
+                    <div class="brand__info">
+                        <span class="section__badge" data-i18n="brandNote">برند شرکت ما</span>
+                        <h2 class="section__title" data-i18n="brandTitle">سورنا فناور سینا؛ همگام با فناوری پایش آلرژن
+                        </h2>
+                        <p class="section__subtitle" data-i18n="brandDesc">ما ترکیبی از تجربه علمی و طراحی بومی را برای
+                            توسعه دستگاه‌های پایش محیطی ارائه می‌دهیم که نیازهای بیمارستان‌ها، آزمایشگاه‌ها و مراکز
+                            تحقیقاتی را پوشش می‌دهد.</p>
+                        <div class="brand__cards">
+                            <div class="brand__card">
+                                <h3 data-i18n="brandCard1Title">ثبت اختراع ملی</h3>
+                                <p data-i18n="brandCard1Desc">دستگاه ما دارای گواهی ثبت اختراع اختصاصی در حوزه
+                                    نمونه‌گیری آلرژی و قارچ است.</p>
+                            </div>
+                            <div class="brand__card">
+                                <h3 data-i18n="brandCard2Title">سازگاری با استانداردها</h3>
+                                <p data-i18n="brandCard2Desc">طراحی بر اساس معیارهای جهانی کیفیت و قابلیت استفاده در
+                                    محیط‌های حساس.</p>
+                            </div>
+                        </div>
+                        <div class="brand__actions">
+                            <a href="#patent" class="btn btn--primary" data-i18n="brandBtnMore">بیشتر بدانید</a>
+                            <a href="#contact" class="btn btn--outline" data-i18n="brandBtnConsult">درخواست مشاوره</a>
+                        </div>
+                        <div class="brand__gallery">
+                            <img src="https://drkhorasani.github.io/sfsc_ir/images/govahi01.jpg" alt="Govahi 01" class="brand__gallery-img" />
+                            <img src="https://drkhorasani.github.io/sfsc_ir/images/govahi02.jpg" alt="Govahi 02" class="brand__gallery-img" />
+                            <img src="https://drkhorasani.github.io/sfsc_ir/images/govahi03.jpg" alt="Govahi 03" class="brand__gallery-img" />
+                        </div>
+                    </div>
+                    <div class="brand__logo-wrapper">
+                        <img src="https://drkhorasani.github.io/sfsc_ir/images/logo.jpg" alt="لوگوی شرکت سورنا فناور سینا" class="brand__logo-main" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== STATS ===== -->
+        <section class="stats">
+            <div class="container stats__container">
+                <div class="stats__header">
+                    <h2 class="stats__title" data-i18n="statsTitle">داده‌های پایش هوا</h2>
+                    <p class="stats__sub" data-i18n="statsSub">نمونه‌ای از داده‌های واقعی ثبت شده توسط سامانه</p>
+                </div>
+                <div class="stats__grid">
+                    <div class="stats__item">
+                        <span class="stats__number" data-target="245">0</span>
+                        <span class="stats__label" data-i18n="stat1Label">اسپور قارچ / متر مکعب</span>
+                    </div>
+                    <div class="stats__item">
+                        <span class="stats__number" data-target="178">0</span>
+                        <span class="stats__label" data-i18n="stat2Label">گرده گیاهان</span>
+                    </div>
+                    <div class="stats__item">
+                        <span class="stats__number" data-target="96">0</span>
+                        <span class="stats__label" data-i18n="stat3Label">دقت نمونه‌گیری %</span>
+                    </div>
+                    <div class="stats__item">
+                        <span class="stats__number" data-target="24">0</span>
+                        <span class="stats__label" data-i18n="stat4Label">ساعت پایش پیوسته</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PRODUCTS ===== -->
+        <section id="products" class="section">
+            <div class="container">
+                <div class="section__header">
+                    <h2 class="section__title" data-i18n="productsTitle">محصولات تخصصی</h2>
+                    <p class="section__subtitle" data-i18n="productsSub">طراحی شده بر اساس فناوری مشابه Burkard و Zefon
+                        با قابلیت بومی‌سازی</p>
+                </div>
+                <div id="productsContainer" class="products__grid"></div>
+            </div>
+        </section>
+
+        <!-- ===== SERVICES ===== -->
+        <section id="services" class="section section--light reveal">
+            <div class="container">
+                <div class="section__header">
+                    <h2 class="section__title" data-i18n="servicesTitle">خدمات تخصصی</h2>
+                    <p class="section__subtitle" data-i18n="servicesSub">ارائه خدمات نمونه‌گیری، تحلیل و تفسیر داده‌های
+                        آلرژن و اسپور قارچ</p>
+                </div>
+                <div id="servicesList" class="services__grid"></div>
+            </div>
+        </section>
+
+        <!-- ===== AUTHENTICATION ===== -->
+        <section id="auth" class="section section--light reveal">
+            <div class="container">
+                <div class="section__header">
+                    <h2 class="section__title" data-i18n="authSectionTitle">ورود و ثبت نام</h2>
+                    <p class="section__subtitle" data-i18n="authSectionSubtitle">ثبت نام، ورود به حساب کاربری و مشاهده
+                        پروفایل</p>
+                </div>
+                <div class="auth__card">
+                    <div class="auth__tabs">
+                        <button class="auth__tab auth__tab--active" data-panel="register"
+                            data-i18n="authTabRegister">ثبت نام</button>
+                        <button class="auth__tab" data-panel="login" data-i18n="authTabLogin">ورود</button>
+                        <button class="auth__tab" data-panel="profile" data-i18n="authTabProfile">پروفایل</button>
+                    </div>
+
+                    <!-- Register Panel -->
+                    <div id="registerPanel" class="auth__panel">
+                        <div class="auth__form-grid">
+                            <div>
+                                <label data-i18n="authRegisterUsernameLabel">نام کاربری</label>
+                                <input type="text" id="regUsername" class="auth__input" placeholder="نام کاربری"
+                                    data-placeholder="authRegisterUsernamePlaceholder" />
+                            </div>
+                            <div>
+                                <label data-i18n="authRegisterMobileLabel">شماره موبایل</label>
+                                <input type="tel" id="regMobile" class="auth__input" placeholder="0912xxxxxxx"
+                                    data-placeholder="authRegisterMobilePlaceholder" />
+                            </div>
+                            <div>
+                                <label data-i18n="authRegisterEmailLabel">ایمیل</label>
+                                <input type="email" id="regEmail" class="auth__input" placeholder="example@mail.com"
+                                    data-placeholder="authRegisterEmailPlaceholder" />
+                            </div>
+                            <div>
+                                <label data-i18n="authRegisterPasswordLabel">رمز عبور</label>
+                                <input type="password" id="regPassword" class="auth__input" placeholder="رمز عبور"
+                                    data-placeholder="authRegisterPasswordPlaceholder" />
+                            </div>
+                            <div class="auth__form-full">
+                                <label data-i18n="authRegisterConfirmPasswordLabel">تکرار رمز عبور</label>
+                                <input type="password" id="regConfirmPassword" class="auth__input"
+                                    placeholder="تکرار رمز عبور" data-placeholder="authRegisterConfirmPlaceholder" />
+                            </div>
+                        </div>
+                        <div id="regOtpWrapper" class="auth__otp-wrapper hidden">
+                            <p class="auth__otp-note" data-i18n="authRegisterOtpNote">برای تایید حساب، کد ارسال شده به
+                                موبایل را وارد کنید.</p>
+                            <label data-i18n="authRegisterOtpLabel">کد تایید</label>
+                            <input type="text" id="regOtp" class="auth__input" placeholder="۶ رقمی"
+                                data-placeholder="authRegisterOtpPlaceholder" />
+                            <button id="authRegisterOtpButton" class="btn btn--primary btn--block"
+                                data-i18n="authRegisterOtpButton">تایید کد و ثبت نام</button>
+                        </div>
+                        <div class="auth__actions">
+                            <button id="authRegisterPrimary" class="btn btn--primary"
+                                data-i18n="authRegisterPrimary">ثبت نام</button>
+                            <button id="authRegisterAlt" class="btn btn--outline" data-i18n="authRegisterAlt">قبلاً حساب
+                                دارم</button>
+                        </div>
+                        <div id="regMessage" class="auth__message"></div>
+                    </div>
+
+                    <!-- Login Panel -->
+                    <div id="loginPanel" class="auth__panel hidden">
+                        <div class="auth__form-grid">
+                            <div>
+                                <label data-i18n="authLoginMethodLabel">روش ورود</label>
+                                <select id="loginMethod" class="auth__input">
+                                    <option value="password" data-i18n="authLoginPasswordOption">رمز عبور</option>
+                                    <option value="otp" data-i18n="authLoginOtpOption">کد یک بار مصرف</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label data-i18n="authLoginMobileLabel">شماره موبایل</label>
+                                <input type="tel" id="loginMobile" class="auth__input" placeholder="0912xxxxxxx"
+                                    data-placeholder="authLoginMobilePlaceholder" />
+                            </div>
+                            <div id="passwordLoginWrapper">
+                                <label data-i18n="authLoginPasswordLabel">رمز عبور</label>
+                                <input type="password" id="loginPassword" class="auth__input" placeholder="رمز عبور"
+                                    data-placeholder="authLoginPasswordPlaceholder" />
+                            </div>
+                        </div>
+                        <div id="otpLoginWrapper" class="auth__otp-wrapper hidden">
+                            <p class="auth__otp-note" data-i18n="authLoginOtpNote">کد یک بار مصرف به موبایل شما ارسال
+                                خواهد شد.</p>
+                            <label data-i18n="authLoginOtpLabel">کد OTP</label>
+                            <input type="text" id="loginOtp" class="auth__input" placeholder="۶ رقمی"
+                                data-placeholder="authLoginOtpPlaceholder" />
+                            <button id="authLoginVerifyButton" class="btn btn--primary btn--block"
+                                data-i18n="authLoginVerifyButton">تایید کد و ورود</button>
+                        </div>
+                        <div class="auth__actions">
+                            <button id="authLoginPrimary" class="btn btn--primary"
+                                data-i18n="authLoginPrimary">ورود</button>
+                            <button id="authLoginAlt" class="btn btn--outline" data-i18n="authLoginAlt">ثبت نام
+                                جدید</button>
+                        </div>
+                        <div id="loginMessage" class="auth__message"></div>
+                    </div>
+
+                    <!-- Profile Panel -->
+                    <div id="profilePanel" class="auth__panel hidden">
+                        <div class="auth__profile-grid">
+                            <div class="auth__profile-info">
+                                <h3 data-i18n="authProfileInfoTitle">اطلاعات کاربری</h3>
+                                <p><strong data-i18n="profileUsernameLabel">نام کاربری:</strong> <span
+                                        id="profileUsername"></span></p>
+                                <p><strong data-i18n="profileMobileLabel">موبایل:</strong> <span
+                                        id="profileMobile"></span></p>
+                                <p><strong data-i18n="profileEmailLabel">ایمیل:</strong> <span id="profileEmail"></span>
+                                </p>
+                            </div>
+                            <div class="auth__profile-change">
+                                <h3 data-i18n="authProfileChangeTitle">تغییر رمز عبور</h3>
+                                <label data-i18n="authCurrentPasswordLabel">رمز فعلی</label>
+                                <input type="password" id="profileCurrentPassword" class="auth__input"
+                                    placeholder="رمز فعلی" data-placeholder="authCurrentPasswordPlaceholder" />
+                                <label data-i18n="authNewPasswordLabel">رمز جدید</label>
+                                <input type="password" id="profileNewPassword" class="auth__input"
+                                    placeholder="رمز جدید" data-placeholder="authNewPasswordPlaceholder" />
+                            </div>
+                        </div>
+                        <div class="auth__actions">
+                            <button id="authSavePasswordButton" class="btn btn--primary"
+                                data-i18n="authSavePasswordButton">ذخیره رمز جدید</button>
+                            <button id="authLogoutButton" class="btn btn--outline" data-i18n="authLogoutButton">خروج از
+                                حساب</button>
+                        </div>
+                        <div id="profileMessage" class="auth__message"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PATENT ===== -->
+        <section id="patent" class="section reveal">
+            <div class="container">
+                <div class="patent__grid">
+                    <div class="patent__info">
+                        <span class="section__badge" data-i18n="patentNote">ثبت اختراع و نوآوری</span>
+                        <h2 class="section__title" data-i18n="patentTitle">محصول ثبت‌شده در سیستم پایش آلرژن</h2>
+                        <p class="section__subtitle" data-i18n="patentDesc">دستگاه نمونه‌گیری ما یک راهکار بومی با ثبت
+                            اختراع در حوزه پایش نمونه‌های هوا می‌باشد که به صورت پایدار و خودکار، داده‌های محیطی را ثبت
+                            می‌کند.</p>
+                        <ul class="patent__features">
+                            <li><i class="fas fa-check-circle"></i> <span data-i18n="patentFeature1">ثبت اختراع ملی در
+                                    فناوری نمونه‌گیری و تحلیل آلرژن</span></li>
+                            <li><i class="fas fa-check-circle"></i> <span data-i18n="patentFeature2">کنترل کیفیت با
+                                    استانداردهای آزمایشگاهی و محیطی</span></li>
+                            <li><i class="fas fa-check-circle"></i> <span data-i18n="patentFeature3">قابلیت اتصال به
+                                    داشبورد ابری و اعلان‌های هوشمند</span></li>
+                        </ul>
+                    </div>
+                    <div class="patent__image">
+                        <img src="https://drkhorasani.github.io/sfsc_ir/images/00.jpg" alt="ثبت اختراع دستگاه" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== DASHBOARD ===== -->
+        <section id="dashboard" class="section">
+            <div class="container">
+                <div class="dashboard__grid">
+                    <div class="dashboard__info">
+                        <h2 class="section__title" data-i18n="dashboardTitle">داشبورد آنلاین پایش</h2>
+                        <p class="section__subtitle" data-i18n="dashboardDesc">داده‌های ثبت شده توسط دستگاه‌ها به صورت
+                            آنلاین روی پلتفرم ابری ذخیره شده و امکان تحلیل، رسم نمودار، هشدار آلودگی و گزارش‌گیری فراهم
+                            است.</p>
+                        <ul class="dashboard__features">
+                            <li><i class="fas fa-cloud"></i> <span data-i18n="dashboardFeature1">ذخیره‌سازی ابری</span>
+                            </li>
+                            <li><i class="fas fa-chart-line"></i> <span data-i18n="dashboardFeature2">تحلیل روند
+                                    آلودگی</span></li>
+                            <li><i class="fas fa-bell"></i> <span data-i18n="dashboardFeature3">هشدار افزایش
+                                    آلرژن</span></li>
+                        </ul>
+                    </div>
+                    <div class="dashboard__image">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1400"
+                            alt="Dashboard" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== NEWS ===== -->
+        <section id="news" class="section section--light reveal">
+            <div class="container">
+                <div class="section__header">
+                    <h2 class="section__title" data-i18n="newsTitle">اخبار و رسانه</h2>
+                    <p class="section__subtitle" data-i18n="newsSub">رویدادها و موفقیت‌های شرکت سورنا فناور سینا</p>
+                </div>
+                <div id="newsContainer" class="news__grid"></div>
+            </div>
+        </section>
+
+        <!-- ===== GALLERY ===== -->
+        <section id="gallery" class="section reveal">
+            <div class="container">
+                <div class="section__header">
+                    <h2 class="section__title" data-i18n="galleryTitle">گالری تصاویر</h2>
+                    <p class="section__subtitle" data-i18n="gallerySub">نمونه‌هایی از محصولات، تیم توسعه و محیط
+                        آزمایشگاهی ما</p>
+                </div>
+                <div class="gallery__grid">
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery01.jpg" alt="Gallery 01" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery02.jpg" alt="Gallery 02" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery03.jpg" alt="Gallery 03" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery04.jpg" alt="Gallery 04" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery05.jpg" alt="Gallery 05" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery06.jpg" alt="Gallery 06" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery07.jpg" alt="Gallery 07" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery08.jpg" alt="Gallery 08" class="gallery__img" />
+                    <img src="https://drkhorasani.github.io/sfsc_ir/images/gallery09.jpg" alt="Gallery 09" class="gallery__img" />
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== COMPARISON TABLE ===== -->
+        <section class="section">
+            <div class="container">
+                <div class="section__header">
+                    <h2 class="section__title" data-i18n="compareTitle">مقایسه فنی</h2>
+                </div>
+                <div class="table__wrapper">
+                    <table class="compare__table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="compareFeature">ویژگی</th>
+                                <th data-i18n="compareOur">سورنا فناور</th>
+                                <th>Burkard</th>
+                                <th>Zefon</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-i18n="compareRow1">نمونه‌گیری</td>
+                                <td data-i18n="compareOur1">۷ روزه + آنلاین</td>
+                                <td>۷ روزه</td>
+                                <td>لحظه‌ای</td>
+                            </tr>
+                            <tr>
+                                <td data-i18n="compareRow2">تحلیل دیجیتال</td>
+                                <td data-i18n="compareOur2">دارد</td>
+                                <td>ندارد</td>
+                                <td>ندارد</td>
+                            </tr>
+                            <tr>
+                                <td data-i18n="compareRow3">Cloud Platform</td>
+                                <td data-i18n="compareOur3">دارد</td>
+                                <td>ندارد</td>
+                                <td>ندارد</td>
+                            </tr>
+                            <tr>
+                                <td data-i18n="compareRow4">خدمات تحلیل</td>
+                                <td data-i18n="compareOur4">کامل</td>
+                                <td>محدود</td>
+                                <td>محدود</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section id="faq" class="section section--light">
+            <div class="container">
+                <div class="section__header">
+                    <h2 class="section__title" data-i18n="faqTitle">سوالات متداول</h2>
+                </div>
+                <div id="faqContainer" class="faq__list"></div>
+            </div>
+        </section>
+
+        <!-- ===== CONTACT ===== -->
+        <section id="contact" class="section section--dark">
+            <div class="container">
+                <div class="contact__grid">
+                    <div class="contact__info">
+                        <h2 class="section__title section__title--light" data-i18n="contactTitle">تماس با ما</h2>
+                        <p class="contact__desc" data-i18n="contactDesc">برای مشاوره، ثبت سفارش یا همکاری با ما تماس
+                            بگیرید.</p>
+                        <div class="contact__details">
+                            <div><i class="fas fa-phone"></i> 09132299368</div>
+                            <div><i class="fas fa-envelope"></i> sornafanavarsina@gmail.com</div>
+                            <div><i class="fas fa-map-marker-alt"></i> <span data-i18n="contactAddress">اهواز، دانشگاه
+                                    شهید چمران اهواز، مرکز رشد واحدهای فناور</span></div>
+                        </div>
+                    </div>
+                    <form id="contactForm" class="contact__form">
+                        <div>
+                            <label data-i18n="contactNameLabel">نام کامل</label>
+                            <input type="text" id="cname" class="contact__input" required
+                                data-placeholder="contactNamePlaceholder" />
+                        </div>
+                        <div>
+                            <label data-i18n="contactEmailLabel">ایمیل</label>
+                            <input type="email" id="cemail" class="contact__input" required
+                                data-placeholder="contactEmailPlaceholder" />
+                        </div>
+                        <div>
+                            <label data-i18n="contactTypeLabel">نوع درخواست</label>
+                            <select id="ctype" class="contact__input">
+                                <option value="خرید دستگاه" data-i18n="optPurchase">خرید دستگاه</option>
+                                <option value="نمونه‌گیری هوا" data-i18n="optSampling">نمونه‌گیری هوا</option>
+                                <option value="تحلیل داده" data-i18n="optAnalysis">تحلیل داده</option>
+                                <option value="همکاری پژوهشی" data-i18n="optResearch">همکاری پژوهشی</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label data-i18n="contactMsgLabel">پیام</label>
+                            <textarea id="cmsg" rows="4" class="contact__input"
+                                data-placeholder="contactMsgPlaceholder"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn--primary btn--block" data-i18n="contactSubmitBtn">ارسال
+                            درخواست</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="container footer__container">
+            <div class="footer__brand">
+                <h2 class="footer__title">سورنا فناور سینا</h2>
+                <p class="footer__desc" data-i18n="footerDesc">توسعه فناوری‌های نوین پایش آلرژن، اسپور قارچ و
+                    آئروبیولوژی</p>
+            </div>
+            <div class="footer__social">
+                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+            </div>
+            <div class="footer__copy" data-i18n="copyright">© 2026 سورنا فناور سینا - تمام حقوق محفوظ است</div>
+        </div>
+    </footer>
+
+    <!-- ===== MODAL CONTAINER ===== -->
+    <div id="modalContainer"></div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script type="module" src="js/app.js"></script>
+
+
+
+</body>
+
+</html>

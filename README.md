@@ -86,7 +86,7 @@ SurenaFanavar/
 │ ├── news.json # داده‌های اخبار
 │ └── faq.json # داده‌های سوالات
 │
-├── pics/ # تصاویر پروژه
+├── images/ # تصاویر پروژه
 │
 └── README.md # این فایل
 
